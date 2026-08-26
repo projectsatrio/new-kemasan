@@ -199,15 +199,17 @@ export default function LoginPage() {
           {/* SISI KIRI: BACKGROUND GAMBAR PABRIK KCS + BRANDING & HERO CONTENT */}
           <div className="lg:col-span-7 relative p-6 lg:p-10 flex flex-col justify-between overflow-hidden">
             
-            {/* GAMBAR BACKGROUND PABRIK SISI KIRI */}
+            {/* GAMBAR BACKGROUND PABRIK (VERSI JERNIH / HIGH RESOLUTION) */}
             <div 
               className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-all duration-700"
               style={{
-                backgroundImage: `url('https://lh3.googleusercontent.com/gps-cs-s/AHRPTWk5X9Cz7jvi_zs-QiHEa83bT96EuSVd4-VQ3EcrdRBrAFzYbXSmbDh3008yxsHpS9bxVuHawvUAK0jucRx1-1NF-3nSaQXsj9q1ofIrrekivWPhNMO5lXCxFvmjw9tUearctodD=s680-w680-h510-rw')`
+                // Menghapus parameter kompresi agar gambar memuat kualitas asli/jernih
+                backgroundImage: `url('https://lh3.googleusercontent.com/gps-cs-s/AHRPTWk5X9Cz7jvi_zs-QiHEa83bT96EuSVd4-VQ3EcrdRBrAFzYbXSmbDh3008yxsHpS9bxVuHawvUAK0jucRx1-1NF-3nSaQXsj9q1ofIrrekivWPhNMO5lXCxFvmjw9tUearctodD')`
               }}
             />
-            {/* OVERLAY SEMI-TRANSPARAN AGAR TEKS TETAP DIBACA DENGAN JELAS */}
-            <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/80 to-white/60 backdrop-blur-[2px] z-0"></div>
+            
+            {/* OVERLAY SEMI-TRANSPARAN TANPA BLUR UNTUK MEMASTIKAN GAMBAR SANGAT TAJAM */}
+            <div className="absolute inset-0 bg-gradient-to-r from-white/85 via-white/70 to-white/40 z-0"></div>
 
             {/* CONTENT DI ATAS BACKGROUND GAMBAR */}
             <div className="relative z-10 space-y-6">
@@ -223,7 +225,7 @@ export default function LoginPage() {
 
               {/* Title & Tagline */}
               <div className="space-y-3 pt-2">
-                <p className="text-[11px] font-bold text-blue-900/80 uppercase tracking-widest">
+                <p className="text-[11px] font-bold text-blue-900 uppercase tracking-widest">
                   PT. KEMASAN CIPTATAMA SEMPURNA
                 </p>
                 <h1 className="text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-[1.2]">
@@ -231,7 +233,7 @@ export default function LoginPage() {
                   Kualitas Terpercaya, <br />
                   <span className="text-blue-600">Solusi untuk Masa Depan.</span>
                 </h1>
-                <p className="text-xs lg:text-sm text-slate-600 max-w-md leading-relaxed font-semibold">
+                <p className="text-xs lg:text-sm text-slate-700 max-w-md leading-relaxed font-semibold">
                   Kami menyediakan berbagai produk kemasan berkualitas dengan inovasi berkelanjutan untuk mendukung kebutuhan industri dan bisnis Anda.
                 </p>
               </div>
@@ -243,12 +245,12 @@ export default function LoginPage() {
                   return (
                     <div
                       key={idx}
-                      className="p-3 bg-white/85 border border-slate-200/80 rounded-xl shadow-sm flex flex-col items-center justify-center text-center gap-1.5 hover:shadow-md hover:bg-white transition-all group backdrop-blur-md"
+                      className="p-3 bg-white/90 border border-slate-200/90 rounded-xl shadow-sm flex flex-col items-center justify-center text-center gap-1.5 hover:shadow-md hover:bg-white transition-all group backdrop-blur-sm"
                     >
                       <div className="p-2 rounded-lg bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                         <IconComponent className="w-4 h-4" />
                       </div>
-                      <span className="text-[11px] font-bold text-slate-700 group-hover:text-blue-900 transition-colors leading-tight">
+                      <span className="text-[11px] font-bold text-slate-800 group-hover:text-blue-900 transition-colors leading-tight">
                         {item.name}
                       </span>
                     </div>
@@ -259,20 +261,20 @@ export default function LoginPage() {
 
             {/* Banner Sustainability (Bawah Kiri) */}
             <div className="relative z-10 pt-6">
-              <div className="inline-flex items-center gap-3 p-3.5 bg-white/90 border border-slate-200/80 rounded-2xl shadow-sm w-full sm:w-auto backdrop-blur-md">
+              <div className="inline-flex items-center gap-3 p-3.5 bg-white/95 border border-slate-200 rounded-2xl shadow-sm w-full sm:w-auto backdrop-blur-sm">
                 <div className="p-2 rounded-xl bg-blue-50 text-blue-600 shrink-0">
                   <Leaf className="w-4 h-4" />
                 </div>
                 <div>
                   <p className="text-xs font-bold text-slate-800">Commitment to Sustainability</p>
-                  <p className="text-[11px] text-slate-500 font-medium">Kemasan berkualitas, lingkungan terjaga.</p>
+                  <p className="text-[11px] text-slate-600 font-medium">Kemasan berkualitas, lingkungan terjaga.</p>
                 </div>
               </div>
             </div>
 
           </div>
 
-          {/* SISI KANAN: CARD FORM LOGIN (DI BALIK DARI GAMBAR PABRIK) */}
+          {/* SISI KANAN: CARD FORM LOGIN */}
           <div className="lg:col-span-5 p-6 lg:p-8 flex flex-col justify-center bg-white/60 backdrop-blur-md">
             <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden flex flex-col justify-between">
               
