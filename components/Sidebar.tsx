@@ -1,16 +1,21 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { UserRole } from '../types';
+import { supabase } from '../lib/supabaseClient';
 import { 
   LayoutDashboard, 
-  ShoppingCart, 
+  Megaphone, 
+  Users, 
+  Wifi, 
+  HelpCircle, 
   Package, 
-  Truck, 
+  Video, 
   FileText, 
   Settings,
-  Lock 
+  LogOut,
+  Lock
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -19,79 +24,141 @@ interface SidebarProps {
 
 export default function Sidebar({ userRole }: SidebarProps) {
   const pathname = usePathname();
+  const router = useRouter();
 
-  const navItems = [
-    { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard, roles: ['superadmin', 'admin', 'marketing', 'logistik', 'finansial', 'purchasing'] },
-    { label: 'Penjualan (Sales)', href: '/dashboard/sales', icon: ShoppingCart, roles: ['superadmin', 'admin', 'marketing'] },
-    { label: 'Stok Barang', href: '/dashboard/inventory', icon: Package, roles: ['superadmin', 'admin', 'logistik'] },
-    { label: 'Pengiriman & Armada', href: '/dashboard/logistics', icon: Truck, roles: ['superadmin', 'admin', 'logistik'] },
-    { label: 'Laporan Keuangan', href: '/dashboard/finance', icon: FileText, roles: ['superadmin', 'admin', 'finansial'] },
-    { label: 'Pengaturan System', href: '/dashboard/settings', icon: Settings, roles: ['superadmin', 'admin'] },
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/');
+  };
+
+  const navGroups = [
+    {
+      group: 'MARKETING',
+      items: [
+        { label: 'Campaigns', href: '/dashboard/campaigns', icon: Megaphone, roles: ['superadmin', 'admin', 'marketing'] },
+        { label: 'Sales Visit Log', href: '/dashboard/sales', icon: Users, roles: ['superadmin', 'admin', 'marketing'] },
+      ]
+    },
+    {
+      group: 'IT DEPARTMENT',
+      items: [
+        { label: 'Wi-Fi Vouchers', href: '/dashboard/wifi', icon: Wifi, roles: ['superadmin', 'admin'] },
+        { label: 'Helpdesk Tickets', href: '/dashboard/helpdesk', icon: HelpCircle, roles: ['superadmin', 'admin'] },
+        { label: 'Sparepart Stock', href: '/dashboard/inventory', icon: Package, roles: ['superadmin', 'admin', 'logistik'] },
+        { label: 'CCTV Configuration', href: '/dashboard/cctv', icon: Video, roles: ['superadmin', 'admin'] },
+      ]
+    },
+    {
+      group: 'ACCOUNTING',
+      items: [
+        { label: 'Invoices', href: '/dashboard/finance', icon: FileText, roles: ['superadmin', 'admin', 'finansial'] },
+      ]
+    },
+    {
+      group: 'ADMINISTRATION',
+      items: [
+        { label: 'User Settings', href: '/dashboard/settings', icon: Settings, roles: ['superadmin', 'admin'] },
+      ]
+    }
   ];
 
   return (
-    <aside className="w-64 bg-slate-900 dark:bg-slate-950 border-r border-slate-800 text-slate-100 flex flex-col justify-between min-h-screen shadow-xl transition-colors duration-200">
-      <div className="p-4">
-        {/* Header Logo */}
-        <div className="flex items-center gap-3 mb-8 px-2 py-1">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-500/30">
-            K
+    <aside className="w-64 bg-[#0b1329] text-slate-300 flex flex-col justify-between min-h-screen">
+      <div className="p-5">
+        {/* Header Branding */}
+        <div className="flex items-center gap-3 mb-6 px-1">
+          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-black text-xs">
+            HQ
           </div>
           <div>
-            <h2 className="font-bold text-white text-sm tracking-wide leading-none">PT. KCS</h2>
-            <span className="text-[11px] text-blue-300 font-medium">ERP Integrated</span>
+            <h2 className="font-bold text-white text-sm leading-tight tracking-wide">CORP INTERNAL</h2>
+            <span className="text-[10px] text-slate-400">KEMASAN GROUP</span>
           </div>
         </div>
 
-        {/* Info Role Active */}
-        <div className="mb-6 px-3.5 py-2.5 bg-slate-800/80 border border-slate-700/50 rounded-xl">
-          <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Akses Hak User</p>
-          <p className="text-xs font-bold capitalize text-cyan-400 mt-0.5">{userRole}</p>
+        {/* Dashboard Single Button */}
+        <div className="mb-4">
+          <Link
+            href="/dashboard"
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all ${
+              pathname === '/dashboard'
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                : 'text-slate-300 hover:bg-slate-800'
+            }`}
+          >
+            <LayoutDashboard className="w-4 h-4" />
+            <span>Dashboard</span>
+          </Link>
         </div>
 
-        {/* Menu Navigasi */}
-        <nav className="space-y-1.5">
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const hasAccess = item.roles.includes(userRole);
-            const isActive = pathname === item.href;
+        {/* Dynamic Groups */}
+        <div className="space-y-4">
+          {navGroups.map((group, idx) => (
+            <div key={idx}>
+              <p className="text-[10px] font-bold tracking-wider text-slate-500 uppercase px-3 mb-1.5">
+                {group.group}
+              </p>
+              <nav className="space-y-0.5">
+                {group.items.map((item) => {
+                  const Icon = item.icon;
+                  const hasAccess = item.roles.includes(userRole);
+                  const isActive = pathname === item.href;
 
-            if (!hasAccess) {
-              return (
-                <div
-                  key={item.href}
-                  className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-500 bg-slate-800/30 border border-transparent cursor-not-allowed select-none opacity-50"
-                  title="Akses Terkunci untuk Role Anda"
-                >
-                  <div className="flex items-center gap-3">
-                    <Icon className="w-4 h-4 text-slate-500" />
-                    <span>{item.label}</span>
-                  </div>
-                  <Lock className="w-3.5 h-3.5 text-slate-500" />
-                </div>
-              );
-            }
+                  if (!hasAccess) {
+                    return (
+                      <div
+                        key={item.href}
+                        className="flex items-center justify-between px-3 py-2 rounded-lg text-xs text-slate-600 cursor-not-allowed select-none opacity-50"
+                        title="Akses Terkunci"
+                      >
+                        <div className="flex items-center gap-3">
+                          <Icon className="w-4 h-4 text-slate-600" />
+                          <span>{item.label}</span>
+                        </div>
+                        <Lock className="w-3 h-3 text-slate-600" />
+                      </div>
+                    );
+                  }
 
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
-                  isActive
-                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
-                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
-                }`}
-              >
-                <Icon className="w-4 h-4" />
-                {item.label}
-              </Link>
-            );
-          })}
-        </nav>
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      className={`flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium transition-all ${
+                        isActive
+                          ? 'bg-blue-600 text-white shadow-md'
+                          : 'text-slate-300 hover:bg-slate-800 hover:text-white'
+                      }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {item.label}
+                    </Link>
+                  );
+                })}
+              </nav>
+            </div>
+          ))}
+        </div>
       </div>
 
-      <div className="p-4 border-t border-slate-800 text-[11px] text-slate-500 text-center font-medium">
-        v1.0.0 &copy; 2026 PT. KCS
+      {/* User Profile Footer */}
+      <div className="p-4 border-t border-slate-800/80 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-8 h-8 rounded-full bg-blue-900/60 border border-blue-500/30 flex items-center justify-center text-blue-400 text-xs font-bold">
+            IT
+          </div>
+          <div>
+            <p className="text-xs font-bold text-white leading-tight">IT</p>
+            <p className="text-[10px] text-blue-400 capitalize">{userRole}</p>
+          </div>
+        </div>
+        <button
+          onClick={handleLogout}
+          className="text-slate-400 hover:text-red-400 transition-colors"
+          title="Logout"
+        >
+          <LogOut className="w-4 h-4" />
+        </button>
       </div>
     </aside>
   );
