@@ -200,19 +200,13 @@ export default function LoginPage() {
           <div className="lg:col-span-7 flex flex-col justify-between space-y-8 pr-0 lg:pr-4">
             
             <div className="space-y-6">
-              {/* Logo Header */}
-              <div className="flex items-center gap-3">
-                <div className="w-11 h-11 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-md shadow-blue-500/30 font-black text-xl">
-                  KCS
-                </div>
-                <div>
-                  <h2 className="text-xl font-black text-blue-950 tracking-tight leading-none">
-                    KCS
-                  </h2>
-                  <p className="text-[10px] font-bold text-blue-600 uppercase tracking-widest mt-0.5">
-                    Your Packaging Partner
-                  </p>
-                </div>
+              {/* LOGO KCS RESMI DARI LINK */}
+              <div className="flex items-center">
+                <img 
+                  src="https://kemasancipta.com/wp-content/uploads/2021/01/WEBSITE-KCS-logo-2025-1024x346.png" 
+                  alt="PT. Kemasan Ciptatama Sempurna Logo" 
+                  className="h-10 md:h-12 w-auto object-contain drop-shadow-sm"
+                />
               </div>
 
               {/* Title & Tagline */}
