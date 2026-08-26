@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../../../lib/supabaseClient';
-import { ArrowLeft, Search, Eye, X, Loader2, AlertTriangle } from 'lucide-react';
+import { ArrowLeft, Search, Eye, X, Loader2, AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface MasterStock {
   id: string;
@@ -30,12 +30,15 @@ export default function SubtotalInventoryPage() {
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
 
+  // Pagination & Rows Per Page State
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+
   // Modal State Histori Per Item
   const [selectedItemName, setSelectedItemName] = useState<string | null>(null);
   const [itemHistoryLogs, setItemHistoryLogs] = useState<MutationLog[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
 
-  // Ambang Batas Stok Menipis (Threshold = 5)
   const LOW_STOCK_THRESHOLD = 5;
 
   useEffect(() => {
@@ -77,6 +80,12 @@ export default function SubtotalInventoryPage() {
 
   const lowStockItems = masters.filter(m => m.total_stok < LOW_STOCK_THRESHOLD);
 
+  // Calculations for Pagination
+  const totalItems = filteredMasters.length;
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedMasters = filteredMasters.slice(startIndex, startIndex + itemsPerPage);
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Top Banner */}
@@ -101,43 +110,52 @@ export default function SubtotalInventoryPage() {
             type="text"
             placeholder="Cari master barang..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
             className="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
           />
         </div>
       </div>
 
-      {/* WARNING ALERT BANNER JIKA ADA STOK KRITIS */}
+      {/* CLEAN & MODERN LOW STOCK ALERT BANNER */}
       {lowStockItems.length > 0 && (
-        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex items-center justify-between">
+        <div className="bg-white border-l-4 border-l-rose-500 border-y border-r border-slate-100 rounded-2xl p-4 shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-rose-500 text-white flex items-center justify-center shadow-md">
+            <div className="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center shrink-0">
               <AlertTriangle className="w-5 h-5 animate-pulse" />
             </div>
             <div>
-              <h4 className="text-xs font-extrabold text-rose-800 uppercase tracking-wider">Warning: Stok Menipis ({lowStockItems.length} Item)</h4>
-              <p className="text-[11px] text-rose-600 font-medium mt-0.5">
-                Beberapa sparepart berada di bawah batas minimum (&lt; 5 pcs). Segera buat pengajuan restock.
+              <div className="flex items-center gap-2">
+                <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wide">Peringatan Stok Menipis</h4>
+                <span className="bg-rose-100 text-rose-700 text-[10px] font-extrabold px-2 py-0.5 rounded-full">
+                  {lowStockItems.length} Item Kritis
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-500 font-medium mt-0.5">
+                Stok sparepart berada di bawah ambang batas minimum (&lt; 5 pcs). Segera persiapkan pengajuan pengadaan barang.
               </p>
             </div>
           </div>
-          <div className="hidden md:flex gap-1.5 flex-wrap max-w-md justify-end">
+          <div className="flex gap-1.5 flex-wrap justify-start md:justify-end">
             {lowStockItems.slice(0, 3).map((item) => (
-              <span key={item.id} className="bg-white border border-rose-200 text-rose-700 text-[10px] font-bold px-2 py-1 rounded-lg">
-                {item.nama_barang}: {item.total_stok} {item.satuan}
+              <span key={item.id} className="bg-slate-50 border border-slate-200 text-slate-700 text-[10px] font-bold px-2.5 py-1 rounded-lg flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+                {item.nama_barang}: <b className="text-rose-600">{item.total_stok} {item.satuan}</b>
               </span>
             ))}
             {lowStockItems.length > 3 && (
-              <span className="bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-1 rounded-lg">
-                +{lowStockItems.length - 3} lainnya
+              <span className="bg-slate-100 text-slate-600 text-[10px] font-bold px-2 py-1 rounded-lg">
+                +{lowStockItems.length - 3} barang lainnya
               </span>
             )}
           </div>
         </div>
       )}
 
-      {/* Table Subtotal */}
-      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
+      {/* Table Subtotal + Pagination */}
+      <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 space-y-4">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-xs">
             <thead>
@@ -154,21 +172,22 @@ export default function SubtotalInventoryPage() {
                 <tr>
                   <td colSpan={5} className="py-8 text-center text-slate-400">Memuat master stok...</td>
                 </tr>
-              ) : filteredMasters.length === 0 ? (
+              ) : paginatedMasters.length === 0 ? (
                 <tr>
                   <td colSpan={5} className="py-8 text-center text-slate-400">Master stok tidak ditemukan.</td>
                 </tr>
               ) : (
-                filteredMasters.map((item) => {
+                paginatedMasters.map((item) => {
                   const isLow = item.total_stok < LOW_STOCK_THRESHOLD;
                   return (
-                    <tr key={item.id} className={`hover:bg-slate-50/80 transition-colors ${isLow ? 'bg-rose-50/30' : ''}`}>
+                    <tr key={item.id} className={`hover:bg-slate-50/80 transition-colors ${isLow ? 'bg-rose-50/20' : ''}`}>
                       <td className="py-3.5 px-4">
                         <div className="flex items-center gap-2">
+                          {/* WARNA TEKS NAMA BARANG DIBUAT HITAM TEGAS (text-slate-900) */}
                           <button
                             type="button"
                             onClick={() => handleOpenItemHistory(item.nama_barang)}
-                            className="font-bold text-blue-600 hover:underline text-left flex items-center gap-1.5 group"
+                            className="font-bold text-slate-900 hover:text-blue-600 hover:underline text-left flex items-center gap-1.5 group transition-colors"
                             title="Klik untuk lihat audit riwayat barang"
                           >
                             <span>{item.nama_barang}</span>
@@ -202,6 +221,49 @@ export default function SubtotalInventoryPage() {
               )}
             </tbody>
           </table>
+        </div>
+
+        {/* CLEAN PAGINATION WITH SELECTOR AT SUBTOTAL MASTER */}
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-100">
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-slate-500 font-medium">Tampilkan:</span>
+            <select
+              value={itemsPerPage}
+              onChange={(e) => {
+                setItemsPerPage(Number(e.target.value));
+                setCurrentPage(1);
+              }}
+              className="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value={5}>5 Data</option>
+              <option value={10}>10 Data</option>
+              <option value={25}>25 Data</option>
+              <option value={50}>50 Data</option>
+              <option value={100}>100 Data</option>
+            </select>
+            <span className="text-xs text-slate-400 font-medium">
+              (Hal. <b>{currentPage}</b> dari <b>{totalPages}</b>)
+            </span>
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              type="button"
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs text-slate-600 font-semibold disabled:opacity-40 disabled:hover:bg-transparent transition-all"
+            >
+              <ChevronLeft className="w-4 h-4" /> Prev
+            </button>
+            <button
+              type="button"
+              disabled={currentPage >= totalPages}
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+              className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs text-slate-600 font-semibold disabled:opacity-40 disabled:hover:bg-transparent transition-all"
+            >
+              Next <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
