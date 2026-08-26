@@ -18,7 +18,8 @@ import {
   TrendingDown,
   Boxes,
   X,
-  Eye
+  Eye,
+  AlertTriangle
 } from 'lucide-react';
 
 interface MutationLog {
@@ -51,6 +52,9 @@ export default function InventoryPage() {
   const [totalMasterCount, setTotalMasterCount] = useState(0);
   const [totalMasukCount, setTotalMasukCount] = useState(0);
   const [totalKeluarCount, setTotalKeluarCount] = useState(0);
+  
+  // State Counter Stok Menipis (< 5)
+  const [lowStockCount, setLowStockCount] = useState(0);
 
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 6;
@@ -109,6 +113,10 @@ export default function InventoryPage() {
 
     const { count: keluarCnt } = await supabase.from('inventory_mutations').select('*', { count: 'exact', head: true }).neq('jenis_mutasi', 'Barang Masuk');
     if (keluarCnt !== null) setTotalKeluarCount(keluarCnt);
+
+    // Count Low Stock (< 5)
+    const { count: lowCnt } = await supabase.from('inventory_masters').select('*', { count: 'exact', head: true }).lt('total_stok', 5);
+    if (lowCnt !== null) setLowStockCount(lowCnt);
   };
 
   const fetchLogs = async () => {
@@ -127,7 +135,6 @@ export default function InventoryPage() {
     }
   };
 
-  // Fetch khusus histori per item saat nama diklik
   const handleOpenItemHistory = async (itemName: string) => {
     setSelectedItemName(itemName);
     setLoadingHistory(true);
@@ -271,13 +278,20 @@ export default function InventoryPage() {
         </div>
 
         <div className="flex items-center gap-3">
+          {/* Button Subtotal Master dengan Alert Warning Badge */}
           <Link
             href="/dashboard/it-department/inventory_sub"
-            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all"
+            className="relative bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all"
           >
             <Layers className="w-4 h-4" />
             Subtotal Master Stok
+            {lowStockCount > 0 && (
+              <span className="bg-rose-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full animate-pulse flex items-center gap-1">
+                <AlertTriangle className="w-3 h-3" /> {lowStockCount} Critical
+              </span>
+            )}
           </Link>
+
           <button
             onClick={handleExportPDF}
             className="bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all"
@@ -578,12 +592,11 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      {/* MODAL POP-UP AUDIT HISTORI PER ITEM */}
+      {/* MODAL AUDIT HISTORI PER ITEM */}
       {selectedItemName && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-3xl w-full p-6 space-y-4 max-h-[85vh] flex flex-col justify-between">
             <div>
-              {/* Modal Header */}
               <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div>
                   <span className="text-[10px] font-bold tracking-wider text-blue-600 uppercase">Audit Track History</span>
@@ -597,7 +610,6 @@ export default function InventoryPage() {
                 </button>
               </div>
 
-              {/* Modal Content Table */}
               <div className="mt-4 overflow-y-auto max-h-[50vh]">
                 {loadingHistory ? (
                   <div className="py-8 flex items-center justify-center text-slate-400 gap-2">
@@ -644,7 +656,6 @@ export default function InventoryPage() {
               </div>
             </div>
 
-            {/* Modal Footer */}
             <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
               <span className="text-slate-400 text-[11px]">Total Transaksi Terrekam: <b>{itemHistoryLogs.length} Data</b></span>
               <button
