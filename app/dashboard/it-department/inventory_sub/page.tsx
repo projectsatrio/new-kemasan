@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../../../lib/supabaseClient';
-import { Layers, ArrowLeft, Search, Eye, X, Loader2 } from 'lucide-react';
+import { ArrowLeft, Search, Eye, X, Loader2, AlertTriangle } from 'lucide-react';
 
 interface MasterStock {
   id: string;
@@ -34,6 +34,9 @@ export default function SubtotalInventoryPage() {
   const [selectedItemName, setSelectedItemName] = useState<string | null>(null);
   const [itemHistoryLogs, setItemHistoryLogs] = useState<MutationLog[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(false);
+
+  // Ambang Batas Stok Menipis (Threshold = 5)
+  const LOW_STOCK_THRESHOLD = 5;
 
   useEffect(() => {
     fetchMasters();
@@ -72,6 +75,8 @@ export default function SubtotalInventoryPage() {
     m.nama_barang.toLowerCase().includes(search.toLowerCase())
   );
 
+  const lowStockItems = masters.filter(m => m.total_stok < LOW_STOCK_THRESHOLD);
+
   return (
     <div className="max-w-7xl mx-auto space-y-6">
       {/* Top Banner */}
@@ -102,6 +107,35 @@ export default function SubtotalInventoryPage() {
         </div>
       </div>
 
+      {/* WARNING ALERT BANNER JIKA ADA STOK KRITIS */}
+      {lowStockItems.length > 0 && (
+        <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-rose-500 text-white flex items-center justify-center shadow-md">
+              <AlertTriangle className="w-5 h-5 animate-pulse" />
+            </div>
+            <div>
+              <h4 className="text-xs font-extrabold text-rose-800 uppercase tracking-wider">Warning: Stok Menipis ({lowStockItems.length} Item)</h4>
+              <p className="text-[11px] text-rose-600 font-medium mt-0.5">
+                Beberapa sparepart berada di bawah batas minimum (&lt; 5 pcs). Segera buat pengajuan restock.
+              </p>
+            </div>
+          </div>
+          <div className="hidden md:flex gap-1.5 flex-wrap max-w-md justify-end">
+            {lowStockItems.slice(0, 3).map((item) => (
+              <span key={item.id} className="bg-white border border-rose-200 text-rose-700 text-[10px] font-bold px-2 py-1 rounded-lg">
+                {item.nama_barang}: {item.total_stok} {item.satuan}
+              </span>
+            ))}
+            {lowStockItems.length > 3 && (
+              <span className="bg-rose-100 text-rose-700 text-[10px] font-bold px-2 py-1 rounded-lg">
+                +{lowStockItems.length - 3} lainnya
+              </span>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Table Subtotal */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100">
         <div className="overflow-x-auto">
@@ -125,35 +159,46 @@ export default function SubtotalInventoryPage() {
                   <td colSpan={5} className="py-8 text-center text-slate-400">Master stok tidak ditemukan.</td>
                 </tr>
               ) : (
-                filteredMasters.map((item) => (
-                  <tr key={item.id} className="hover:bg-slate-50/80 transition-colors">
-                    <td className="py-3.5 px-4">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenItemHistory(item.nama_barang)}
-                        className="font-bold text-blue-600 hover:underline text-left flex items-center gap-1.5 group"
-                        title="Klik untuk lihat audit riwayat barang"
-                      >
-                        <span>{item.nama_barang}</span>
-                        <Eye className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-blue-500" />
-                      </button>
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-600 font-semibold">{item.satuan}</td>
-                    <td className="py-3.5 px-4 text-slate-500">{item.detail_satuan || '-'}</td>
-                    <td className="py-3.5 px-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${
-                        item.total_stok > 0
-                          ? 'bg-blue-50 text-blue-600 border border-blue-200'
-                          : 'bg-rose-50 text-rose-600 border border-rose-200'
-                      }`}>
-                        {item.total_stok} {item.satuan}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-4 text-slate-400 text-[11px]">
-                      {new Date(item.updated_at).toLocaleString('id-ID')}
-                    </td>
-                  </tr>
-                ))
+                filteredMasters.map((item) => {
+                  const isLow = item.total_stok < LOW_STOCK_THRESHOLD;
+                  return (
+                    <tr key={item.id} className={`hover:bg-slate-50/80 transition-colors ${isLow ? 'bg-rose-50/30' : ''}`}>
+                      <td className="py-3.5 px-4">
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => handleOpenItemHistory(item.nama_barang)}
+                            className="font-bold text-blue-600 hover:underline text-left flex items-center gap-1.5 group"
+                            title="Klik untuk lihat audit riwayat barang"
+                          >
+                            <span>{item.nama_barang}</span>
+                            <Eye className="w-3.5 h-3.5 opacity-0 group-hover:opacity-100 transition-opacity text-blue-500" />
+                          </button>
+
+                          {isLow && (
+                            <span className="bg-rose-100 text-rose-600 text-[9px] font-extrabold px-1.5 py-0.5 rounded border border-rose-200 uppercase tracking-wider flex items-center gap-0.5">
+                              <AlertTriangle className="w-2.5 h-2.5" /> Stok Kritis
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-600 font-semibold">{item.satuan}</td>
+                      <td className="py-3.5 px-4 text-slate-500">{item.detail_satuan || '-'}</td>
+                      <td className="py-3.5 px-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          isLow
+                            ? 'bg-rose-100 text-rose-700 border border-rose-300 animate-pulse'
+                            : 'bg-blue-50 text-blue-600 border border-blue-200'
+                        }`}>
+                          {item.total_stok} {item.satuan}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-4 text-slate-400 text-[11px]">
+                        {new Date(item.updated_at).toLocaleString('id-ID')}
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>
