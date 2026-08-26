@@ -3,7 +3,21 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../../../lib/supabaseClient';
-import { Package, Download, Save, History, ChevronLeft, ChevronRight, Layers, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { 
+  Package, 
+  Download, 
+  Save, 
+  History, 
+  ChevronLeft, 
+  ChevronRight, 
+  Layers, 
+  CheckCircle2, 
+  AlertCircle, 
+  Loader2,
+  TrendingUp,
+  TrendingDown,
+  Boxes
+} from 'lucide-react';
 
 interface MutationLog {
   id: string;
@@ -34,9 +48,14 @@ export default function InventoryPage() {
   const [submitting, setSubmitting] = useState(false);
   const [logs, setLogs] = useState<MutationLog[]>([]);
 
-  // Pagination State
+  // Stats Summary State
+  const [totalMasterCount, setTotalMasterCount] = useState(0);
+  const [totalMasukCount, setTotalMasukCount] = useState(0);
+  const [totalKeluarCount, setTotalKeluarCount] = useState(0);
+
+  // Pagination State (Di-set 6 item per page agar muat pas dengan tinggi form)
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 8;
+  const itemsPerPage = 6;
   const [totalItems, setTotalItems] = useState(0);
 
   // Auto-lock logic based on jenis mutasi
@@ -75,10 +94,25 @@ export default function InventoryPage() {
     return () => clearTimeout(timer);
   }, [namaBarang]);
 
-  // Fetch Logs with Pagination
+  // Fetch Logs & Stats
   useEffect(() => {
     fetchLogs();
+    fetchStats();
   }, [currentPage]);
+
+  const fetchStats = async () => {
+    // Total master count
+    const { count: masterCnt } = await supabase.from('inventory_masters').select('*', { count: 'exact', head: true });
+    if (masterCnt !== null) setTotalMasterCount(masterCnt);
+
+    // Total barang masuk
+    const { count: masukCnt } = await supabase.from('inventory_mutations').select('*', { count: 'exact', head: true }).eq('jenis_mutasi', 'Barang Masuk');
+    if (masukCnt !== null) setTotalMasukCount(masukCnt);
+
+    // Total barang keluar/bekas
+    const { count: keluarCnt } = await supabase.from('inventory_mutations').select('*', { count: 'exact', head: true }).neq('jenis_mutasi', 'Barang Masuk');
+    if (keluarCnt !== null) setTotalKeluarCount(keluarCnt);
+  };
 
   const fetchLogs = async () => {
     const from = (currentPage - 1) * itemsPerPage;
@@ -114,11 +148,9 @@ export default function InventoryPage() {
       tujuan_user: tujuanUser,
     };
 
-    // 1. Insert Log Mutasi
     const { error: insertErr } = await supabase.from('inventory_mutations').insert([payload]);
 
     if (!insertErr) {
-      // 2. Upsert Master Stock Subtotal
       const { data: existingMaster } = await supabase
         .from('inventory_masters')
         .select('*')
@@ -142,17 +174,17 @@ export default function InventoryPage() {
         updated_at: new Date().toISOString(),
       }, { onConflict: 'nama_barang' });
 
-      // Reset Form
       setNamaBarang('');
       setJumlah(1);
       setDetailSatuan('');
       setBekasDari('');
       fetchLogs();
+      fetchStats();
     }
     setSubmitting(false);
   };
 
-  // Export PDF Stream function
+  // Export PDF Stream
   const handleExportPDF = () => {
     const printWindow = window.open('', '', 'width=900,height=700');
     if (!printWindow) return;
@@ -210,11 +242,11 @@ export default function InventoryPage() {
     setTimeout(() => printWindow.print(), 500);
   };
 
-  const totalPages = Math.ceil(totalItems / itemsPerPage);
+  const totalPages = Math.ceil(totalItems / itemsPerPage) || 1;
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Top Banner & Action Buttons */}
+      {/* Top Banner & Actions */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
@@ -244,168 +276,169 @@ export default function InventoryPage() {
         </div>
       </div>
 
-      {/* Grid Section */}
+      {/* Main Grid Content */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
-        {/* Left Form Input */}
-        <form onSubmit={handleSubmit} className="lg:col-span-4 bg-white rounded-2xl p-6 shadow-sm border border-slate-100 space-y-4">
-          <div className="flex items-center gap-2 text-slate-800 font-bold text-sm mb-2">
-            <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center">
-              <Package className="w-4 h-4" />
-            </div>
-            <span>Input Log Mutasi</span>
-          </div>
-
-          {/* Nama Barang + Indicator Status */}
-          <div>
-            <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Nama Barang / Sparepart</label>
-            <input
-              type="text"
-              required
-              placeholder="Contoh: RAM DDR4 8GB"
-              value={namaBarang}
-              onChange={(e) => setNamaBarang(e.target.value)}
-              className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-            />
-            {loadingCheck ? (
-              <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-slate-400">
-                <Loader2 className="w-3 h-3 animate-spin" /> Checking master database...
+        {/* Left Input Form */}
+        <form onSubmit={handleSubmit} className="lg:col-span-4 bg-white rounded-2xl p-6 shadow-sm border border-slate-100 space-y-4 flex flex-col justify-between">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 text-slate-800 font-bold text-sm mb-2">
+              <div className="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center">
+                <Package className="w-4 h-4" />
               </div>
-            ) : isMasterExist === true ? (
-              <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-emerald-600 font-medium">
-                <CheckCircle2 className="w-3.5 h-3.5" /> Master item sudah terdaftar
-              </div>
-            ) : isMasterExist === false ? (
-              <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-amber-600 font-medium">
-                <AlertCircle className="w-3.5 h-3.5" /> Master item belum terdaftar (Item Baru)
-              </div>
-            ) : null}
-          </div>
-
-          {/* Jenis Mutasi & Satuan */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Jenis Mutasi</label>
-              <select
-                value={jenisMutasi}
-                onChange={(e) => setJenisMutasi(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-              >
-                <option value="Barang Masuk">Barang Masuk</option>
-                <option value="Barang Keluar">Barang Keluar</option>
-                <option value="Barang Bekas">Barang Bekas</option>
-              </select>
+              <span>Input Log Mutasi</span>
             </div>
 
+            {/* Nama Barang + Indicator Status */}
             <div>
-              <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Satuan</label>
-              <select
-                value={satuan}
-                onChange={(e) => setSatuan(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
-              >
-                <option value="Pcs">Pcs</option>
-                <option value="Unit">Unit</option>
-                <option value="Box">Box</option>
-                <option value="Set">Set</option>
-              </select>
-            </div>
-          </div>
-
-          {/* Dynamic Satuan Fields (Box / Set) */}
-          {satuan === 'Box' && (
-            <div>
-              <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Isi 1 Box Berapa Pcs?</label>
-              <input
-                type="text"
-                placeholder="Contoh: 1 Box = 50 Pcs"
-                value={detailSatuan}
-                onChange={(e) => setDetailSatuan(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          )}
-
-          {satuan === 'Set' && (
-            <div>
-              <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Rincian Isi 1 Set</label>
-              <input
-                type="text"
-                placeholder="Contoh: 1 Mouse, 1 Keyboard"
-                value={detailSatuan}
-                onChange={(e) => setDetailSatuan(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          )}
-
-          {/* Dynamic Bekas Dari Field */}
-          {jenisMutasi === 'Barang Bekas' && (
-            <div>
-              <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Barang Bekas Dari User/Dept</label>
+              <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Nama Barang / Sparepart</label>
               <input
                 type="text"
                 required
-                placeholder="Contoh: Pak Budi (HRD)"
-                value={bekasDari}
-                onChange={(e) => setBekasDari(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-          )}
-
-          {/* Jumlah & Tanggal */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Jumlah</label>
-              <input
-                type="number"
-                min="1"
-                required
-                value={jumlah}
-                onChange={(e) => setJumlah(Number(e.target.value))}
+                placeholder="Contoh: RAM DDR4 8GB"
+                value={namaBarang}
+                onChange={(e) => setNamaBarang(e.target.value)}
                 className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
               />
+              {loadingCheck ? (
+                <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-slate-400">
+                  <Loader2 className="w-3 h-3 animate-spin" /> Checking master database...
+                </div>
+              ) : isMasterExist === true ? (
+                <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-emerald-600 font-medium">
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Master item sudah terdaftar
+                </div>
+              ) : isMasterExist === false ? (
+                <div className="flex items-center gap-1.5 mt-1.5 text-[11px] text-amber-600 font-medium">
+                  <AlertCircle className="w-3.5 h-3.5" /> Master item belum terdaftar (Item Baru)
+                </div>
+              ) : null}
             </div>
 
+            {/* Jenis Mutasi & Satuan */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Jenis Mutasi</label>
+                <select
+                  value={jenisMutasi}
+                  onChange={(e) => setJenisMutasi(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                >
+                  <option value="Barang Masuk">Barang Masuk</option>
+                  <option value="Barang Keluar">Barang Keluar</option>
+                  <option value="Barang Bekas">Barang Bekas</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Satuan</label>
+                <select
+                  value={satuan}
+                  onChange={(e) => setSatuan(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                >
+                  <option value="Pcs">Pcs</option>
+                  <option value="Unit">Unit</option>
+                  <option value="Box">Box</option>
+                  <option value="Set">Set</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Dynamic Fields */}
+            {satuan === 'Box' && (
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Isi 1 Box Berapa Pcs?</label>
+                <input
+                  type="text"
+                  placeholder="Contoh: 1 Box = 50 Pcs"
+                  value={detailSatuan}
+                  onChange={(e) => setDetailSatuan(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            )}
+
+            {satuan === 'Set' && (
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Rincian Isi 1 Set</label>
+                <input
+                  type="text"
+                  placeholder="Contoh: 1 Mouse, 1 Keyboard"
+                  value={detailSatuan}
+                  onChange={(e) => setDetailSatuan(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            )}
+
+            {jenisMutasi === 'Barang Bekas' && (
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Barang Bekas Dari User/Dept</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Pak Budi (HRD)"
+                  value={bekasDari}
+                  onChange={(e) => setBekasDari(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            )}
+
+            {/* Jumlah & Tanggal */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Jumlah</label>
+                <input
+                  type="number"
+                  min="1"
+                  required
+                  value={jumlah}
+                  onChange={(e) => setJumlah(Number(e.target.value))}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Tanggal Input</label>
+                <input
+                  type="date"
+                  required
+                  value={tanggal}
+                  onChange={(e) => setTanggal(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                />
+              </div>
+            </div>
+
+            {/* Tujuan User */}
             <div>
-              <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Tanggal Input</label>
+              <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Tujuan User / Departemen</label>
               <input
-                type="date"
+                type="text"
                 required
-                value={tanggal}
-                onChange={(e) => setTanggal(e.target.value)}
-                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                disabled={jenisMutasi === 'Barang Masuk'}
+                value={tujuanUser}
+                onChange={(e) => setTujuanUser(e.target.value)}
+                className={`w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium ${
+                  jenisMutasi === 'Barang Masuk' ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-slate-50'
+                }`}
               />
             </div>
-          </div>
-
-          {/* Tujuan User */}
-          <div>
-            <label className="block text-[11px] font-bold text-slate-600 uppercase mb-1">Tujuan User / Departemen</label>
-            <input
-              type="text"
-              required
-              disabled={jenisMutasi === 'Barang Masuk'}
-              value={tujuanUser}
-              onChange={(e) => setTujuanUser(e.target.value)}
-              className={`w-full px-3 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium ${
-                jenisMutasi === 'Barang Masuk' ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-slate-50'
-              }`}
-            />
           </div>
 
           <button
             type="submit"
             disabled={submitting}
-            className="w-full mt-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-3 rounded-xl shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
+            className="w-full mt-4 bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold py-3 rounded-xl shadow-lg shadow-blue-500/20 flex items-center justify-center gap-2 transition-all disabled:opacity-50"
           >
             {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Simpan Mutasi
           </button>
         </form>
 
-        {/* Right Table Logs & Pagination */}
+        {/* Right Table & Fixed Pagination */}
         <div className="lg:col-span-8 bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-4">
@@ -413,7 +446,9 @@ export default function InventoryPage() {
                 <History className="w-4 h-4 text-blue-600" />
                 <span>Riwayat Aktivitas Logistik</span>
               </div>
-              <span className="text-[10px] text-slate-400 font-medium">Total Log: {totalItems} Data</span>
+              <span className="text-[10px] bg-slate-100 text-slate-600 font-bold px-2.5 py-1 rounded-full">
+                Total Log: {totalItems} Data
+              </span>
             </div>
 
             <div className="overflow-x-auto">
@@ -464,30 +499,71 @@ export default function InventoryPage() {
             </div>
           </div>
 
-          {/* Pagination Component */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-4">
-              <p className="text-xs text-slate-500">
-                Halaman <span className="font-bold text-slate-800">{currentPage}</span> dari <span className="font-bold text-slate-800">{totalPages}</span>
-              </p>
-              <div className="flex items-center gap-2">
-                <button
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage((prev) => prev - 1)}
-                  className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 disabled:opacity-40 disabled:hover:bg-transparent"
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </button>
-                <button
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage((prev) => prev + 1)}
-                  className="p-2 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 disabled:opacity-40 disabled:hover:bg-transparent"
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
+          {/* Always Visible Pagination Controls */}
+          <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-6">
+            <p className="text-xs text-slate-500 font-medium">
+              Menampilkan Halaman <span className="font-bold text-slate-800">{currentPage}</span> dari <span className="font-bold text-slate-800">{totalPages}</span>
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs text-slate-600 font-semibold disabled:opacity-40 disabled:hover:bg-transparent transition-all"
+              >
+                <ChevronLeft className="w-4 h-4" /> Prev
+              </button>
+              <button
+                type="button"
+                disabled={currentPage >= totalPages}
+                onClick={() => setCurrentPage((prev) => Math.min(prev + 1, totalPages))}
+                className="flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-xs text-slate-600 font-semibold disabled:opacity-40 disabled:hover:bg-transparent transition-all"
+              >
+                Next <ChevronRight className="w-4 h-4" />
+              </button>
             </div>
-          )}
+          </div>
+        </div>
+
+      </div>
+
+      {/* NEW WIDGET: STATISTIK RINGKASAN DI BAGIAN BAWAH */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
+        
+        {/* Card 1: Total Master Item */}
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Variasi Master Barang</p>
+            <h3 className="text-2xl font-black text-slate-800 mt-1">{totalMasterCount} <span className="text-xs font-semibold text-slate-400">Item</span></h3>
+            <p className="text-[10px] text-blue-600 font-medium mt-1">Terdaftar di master stock</p>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+            <Boxes className="w-6 h-6" />
+          </div>
+        </div>
+
+        {/* Card 2: Total Mutasi Masuk */}
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Mutasi Masuk</p>
+            <h3 className="text-2xl font-black text-emerald-600 mt-1">{totalMasukCount} <span className="text-xs font-semibold text-slate-400">Transaksi</span></h3>
+            <p className="text-[10px] text-emerald-600 font-medium mt-1">Stock internal bertambah</p>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <TrendingUp className="w-6 h-6" />
+          </div>
+        </div>
+
+        {/* Card 3: Total Mutasi Keluar/Bekas */}
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center justify-between">
+          <div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Mutasi Keluar & Bekas</p>
+            <h3 className="text-2xl font-black text-rose-600 mt-1">{totalKeluarCount} <span className="text-xs font-semibold text-slate-400">Transaksi</span></h3>
+            <p className="text-[10px] text-rose-600 font-medium mt-1">Pengeluaran & retur user</p>
+          </div>
+          <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+            <TrendingDown className="w-6 h-6" />
+          </div>
         </div>
 
       </div>
