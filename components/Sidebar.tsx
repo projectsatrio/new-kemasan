@@ -44,7 +44,7 @@ export default function Sidebar({ userRole }: SidebarProps) {
       items: [
         { label: 'Wi-Fi Vouchers', href: '/dashboard/wifi', icon: Wifi, roles: ['superadmin', 'admin'] },
         { label: 'Helpdesk Tickets', href: '/dashboard/helpdesk', icon: HelpCircle, roles: ['superadmin', 'admin'] },
-        { label: 'Sparepart Stock', href: '/dashboard/inventory', icon: Package, roles: ['superadmin', 'admin', 'logistik'] },
+        { label: 'Sparepart Stock', href: '/dashboard/it-department/inventory', icon: Package, roles: ['superadmin', 'admin', 'logistik'] },
         { label: 'CCTV Configuration', href: '/dashboard/cctv', icon: Video, roles: ['superadmin', 'admin'] },
       ]
     },
