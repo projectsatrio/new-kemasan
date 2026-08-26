@@ -1,12 +1,11 @@
-// app/dashboard/layout.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase } from '../../lib/supabaseClient';
 import { useRouter } from 'next/navigation';
-import Sidebar from '@/components/Sidebar';
-import ThemeToggle from '@/components/ThemeToggle';
-import { UserRole } from '@/types';
+import Sidebar from '../../components/Sidebar';
+import ThemeToggle from '../../components/ThemeToggle';
+import { UserRole } from '../../types';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [role, setRole] = useState<UserRole | null>(null);
