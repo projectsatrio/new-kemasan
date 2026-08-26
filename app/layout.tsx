@@ -1,5 +1,5 @@
 import './globals.css';
-import { ThemeProvider } from 'next-themes';
+import Providers from '../components/Providers';
 
 export const metadata = {
   title: 'ERP System - PT. Kemasan Ciptatama Sempurna',
@@ -14,9 +14,7 @@ export default function RootLayout({
   return (
     <html lang="id" suppressHydrationWarning>
       <body className="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          {children}
-        </ThemeProvider>
+        <Providers>{children}</Providers>
       </body>
     </html>
   );
