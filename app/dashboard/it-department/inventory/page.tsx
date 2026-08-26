@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { supabase } from '../../../../lib/supabaseClient';
 import { 
@@ -19,7 +19,10 @@ import {
   Boxes,
   X,
   Eye,
-  AlertTriangle
+  AlertTriangle,
+  Search,
+  Filter,
+  RotateCcw
 } from 'lucide-react';
 
 interface MutationLog {
@@ -49,11 +52,15 @@ export default function InventoryPage() {
   const [submitting, setSubmitting] = useState(false);
   const [logs, setLogs] = useState<MutationLog[]>([]);
 
+  // State Filter & Search Tabel Log
+  const [searchQuery, setSearchQuery] = useState('');
+  const [filterJenis, setFilterJenis] = useState('ALL');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+
   const [totalMasterCount, setTotalMasterCount] = useState(0);
   const [totalMasukCount, setTotalMasukCount] = useState(0);
   const [totalKeluarCount, setTotalKeluarCount] = useState(0);
-  
-  // State Counter Stok Menipis (< 5)
   const [lowStockCount, setLowStockCount] = useState(0);
 
   const [currentPage, setCurrentPage] = useState(1);
@@ -99,11 +106,6 @@ export default function InventoryPage() {
     return () => clearTimeout(timer);
   }, [namaBarang]);
 
-  useEffect(() => {
-    fetchLogs();
-    fetchStats();
-  }, [currentPage]);
-
   const fetchStats = async () => {
     const { count: masterCnt } = await supabase.from('inventory_masters').select('*', { count: 'exact', head: true });
     if (masterCnt !== null) setTotalMasterCount(masterCnt);
@@ -114,18 +116,36 @@ export default function InventoryPage() {
     const { count: keluarCnt } = await supabase.from('inventory_mutations').select('*', { count: 'exact', head: true }).neq('jenis_mutasi', 'Barang Masuk');
     if (keluarCnt !== null) setTotalKeluarCount(keluarCnt);
 
-    // Count Low Stock (< 5)
     const { count: lowCnt } = await supabase.from('inventory_masters').select('*', { count: 'exact', head: true }).lt('total_stok', 5);
     if (lowCnt !== null) setLowStockCount(lowCnt);
   };
 
-  const fetchLogs = async () => {
+  const fetchLogs = useCallback(async () => {
     const from = (currentPage - 1) * itemsPerPage;
     const to = from + itemsPerPage - 1;
 
-    const { data, count, error } = await supabase
+    let query = supabase
       .from('inventory_mutations')
-      .select('*', { count: 'exact' })
+      .select('*', { count: 'exact' });
+
+    // Apply Dynamic Filters
+    if (searchQuery.trim()) {
+      query = query.or(`nama_barang.ilike.%${searchQuery.trim()}%,tujuan_user.ilike.%${searchQuery.trim()}%`);
+    }
+
+    if (filterJenis !== 'ALL') {
+      query = query.eq('jenis_mutasi', filterJenis);
+    }
+
+    if (startDate) {
+      query = query.gte('tanggal', startDate);
+    }
+
+    if (endDate) {
+      query = query.lte('tanggal', endDate);
+    }
+
+    const { data, count, error } = await query
       .order('created_at', { ascending: false })
       .range(from, to);
 
@@ -133,6 +153,20 @@ export default function InventoryPage() {
       setLogs(data as MutationLog[]);
       if (count !== null) setTotalItems(count);
     }
+  }, [currentPage, searchQuery, filterJenis, startDate, endDate]);
+
+  useEffect(() => {
+    fetchLogs();
+    fetchStats();
+  }, [fetchLogs]);
+
+  // Reset filter ke default
+  const handleResetFilter = () => {
+    setSearchQuery('');
+    setFilterJenis('ALL');
+    setStartDate('');
+    setEndDate('');
+    setCurrentPage(1);
   };
 
   const handleOpenItemHistory = async (itemName: string) => {
@@ -278,7 +312,6 @@ export default function InventoryPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Button Subtotal Master dengan Alert Warning Badge */}
           <Link
             href="/dashboard/it-department/inventory_sub"
             className="relative bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all"
@@ -459,19 +492,86 @@ export default function InventoryPage() {
           </button>
         </form>
 
-        {/* Right Table */}
-        <div className="lg:col-span-8 bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col justify-between">
+        {/* Right Table with Search & Filter Bar */}
+        <div className="lg:col-span-8 bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col justify-between space-y-4">
           <div>
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2 text-slate-800 font-bold text-sm">
                 <History className="w-4 h-4 text-blue-600" />
                 <span>Riwayat Aktivitas Logistik</span>
               </div>
               <span className="text-[10px] bg-slate-100 text-slate-600 font-bold px-2.5 py-1 rounded-full">
-                Total Log: {totalItems} Data
+                Total: {totalItems} Data
               </span>
             </div>
 
+            {/* FILTER & SEARCH BAR SECTION */}
+            <div className="bg-slate-50/80 p-3 rounded-xl border border-slate-200/80 space-y-2 mb-4">
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-2">
+                
+                {/* Search Bar */}
+                <div className="md:col-span-5 relative">
+                  <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Cari nama barang / tujuan..."
+                    value={searchQuery}
+                    onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                    className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                  />
+                </div>
+
+                {/* Filter Jenis Mutasi */}
+                <div className="md:col-span-4 relative">
+                  <Filter className="w-3.5 h-3.5 absolute left-3 top-2.5 text-slate-400" />
+                  <select
+                    value={filterJenis}
+                    onChange={(e) => { setFilterJenis(e.target.value); setCurrentPage(1); }}
+                    className="w-full pl-8 pr-3 py-1.5 bg-white border border-slate-200 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 font-medium"
+                  >
+                    <option value="ALL">Semua Jenis Mutasi</option>
+                    <option value="Barang Masuk">Barang Masuk</option>
+                    <option value="Barang Keluar">Barang Keluar</option>
+                    <option value="Barang Bekas">Barang Bekas</option>
+                  </select>
+                </div>
+
+                {/* Reset Filter Button */}
+                <div className="md:col-span-3">
+                  <button
+                    type="button"
+                    onClick={handleResetFilter}
+                    className="w-full py-1.5 px-2 bg-white hover:bg-slate-100 border border-slate-200 text-slate-600 rounded-lg text-xs font-semibold flex items-center justify-center gap-1 transition-all"
+                  >
+                    <RotateCcw className="w-3 h-3" /> Reset Filter
+                  </button>
+                </div>
+              </div>
+
+              {/* Date Range Picker */}
+              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-slate-200/60">
+                <div>
+                  <label className="block text-[9px] font-bold text-slate-400 uppercase mb-0.5">Dari Tanggal</label>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => { setStartDate(e.target.value); setCurrentPage(1); }}
+                    className="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-medium text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[9px] font-bold text-slate-400 uppercase mb-0.5">Sampai Tanggal</label>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => { setEndDate(e.target.value); setCurrentPage(1); }}
+                    className="w-full px-2 py-1 bg-white border border-slate-200 rounded-lg text-[11px] font-medium text-slate-600 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Table View */}
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs">
                 <thead>
@@ -486,7 +586,9 @@ export default function InventoryPage() {
                 <tbody className="divide-y divide-slate-100">
                   {logs.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="py-8 text-center text-slate-400">Belum ada data mutasi terrekam.</td>
+                      <td colSpan={5} className="py-8 text-center text-slate-400">
+                        Tidak ada log mutasi yang sesuai dengan filter pencarian.
+                      </td>
                     </tr>
                   ) : (
                     logs.map((log) => (
@@ -529,7 +631,7 @@ export default function InventoryPage() {
           </div>
 
           {/* Pagination */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-100 mt-6">
+          <div className="flex items-center justify-between pt-4 border-t border-slate-100">
             <p className="text-xs text-slate-500 font-medium">
               Menampilkan Halaman <span className="font-bold text-slate-800">{currentPage}</span> dari <span className="font-bold text-slate-800">{totalPages}</span>
             </p>
