@@ -192,15 +192,27 @@ export default function LoginPage() {
       <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-sky-300/25 rounded-full blur-[140px] pointer-events-none"></div>
 
       {/* MAIN CONTAINER FRAME (KOTAK PEMBATAS UTAMA) */}
-      <div className="w-full max-w-[1140px] bg-white/70 backdrop-blur-xl border border-white/90 rounded-[32px] shadow-2xl shadow-blue-900/10 p-6 lg:p-10 relative z-10">
+      <div className="w-full max-w-[1140px] bg-white/40 backdrop-blur-xl border border-white/90 rounded-[32px] shadow-2xl shadow-blue-900/10 overflow-hidden relative z-10">
         
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-12 items-stretch min-h-[580px]">
           
-          {/* SISI KIRI: BRANDING & HERO CONTENT */}
-          <div className="lg:col-span-7 flex flex-col justify-between space-y-8 pr-0 lg:pr-4">
+          {/* SISI KIRI: BACKGROUND GAMBAR PABRIK KCS + BRANDING & HERO CONTENT */}
+          <div className="lg:col-span-7 relative p-6 lg:p-10 flex flex-col justify-between overflow-hidden">
             
-            <div className="space-y-6">
-              {/* LOGO KCS RESMI DARI LINK */}
+            {/* GAMBAR BACKGROUND PABRIK SISI KIRI */}
+            <div 
+              className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat transition-all duration-700"
+              style={{
+                backgroundImage: `url('https://lh3.googleusercontent.com/gps-cs-s/AHRPTWk5X9Cz7jvi_zs-QiHEa83bT96EuSVd4-VQ3EcrdRBrAFzYbXSmbDh3008yxsHpS9bxVuHawvUAK0jucRx1-1NF-3nSaQXsj9q1ofIrrekivWPhNMO5lXCxFvmjw9tUearctodD=s680-w680-h510-rw')`
+              }}
+            />
+            {/* OVERLAY SEMI-TRANSPARAN AGAR TEKS TETAP DIBACA DENGAN JELAS */}
+            <div className="absolute inset-0 bg-gradient-to-r from-white/90 via-white/80 to-white/60 backdrop-blur-[2px] z-0"></div>
+
+            {/* CONTENT DI ATAS BACKGROUND GAMBAR */}
+            <div className="relative z-10 space-y-6">
+              
+              {/* LOGO KCS RESMI */}
               <div className="flex items-center">
                 <img 
                   src="https://kemasancipta.com/wp-content/uploads/2021/01/WEBSITE-KCS-logo-2025-1024x346.png" 
@@ -211,7 +223,7 @@ export default function LoginPage() {
 
               {/* Title & Tagline */}
               <div className="space-y-3 pt-2">
-                <p className="text-[11px] font-bold text-slate-400 uppercase tracking-widest">
+                <p className="text-[11px] font-bold text-blue-900/80 uppercase tracking-widest">
                   PT. KEMASAN CIPTATAMA SEMPURNA
                 </p>
                 <h1 className="text-3xl lg:text-4xl font-black text-slate-900 tracking-tight leading-[1.2]">
@@ -219,7 +231,7 @@ export default function LoginPage() {
                   Kualitas Terpercaya, <br />
                   <span className="text-blue-600">Solusi untuk Masa Depan.</span>
                 </h1>
-                <p className="text-xs lg:text-sm text-slate-500 max-w-md leading-relaxed font-medium">
+                <p className="text-xs lg:text-sm text-slate-600 max-w-md leading-relaxed font-semibold">
                   Kami menyediakan berbagai produk kemasan berkualitas dengan inovasi berkelanjutan untuk mendukung kebutuhan industri dan bisnis Anda.
                 </p>
               </div>
@@ -231,7 +243,7 @@ export default function LoginPage() {
                   return (
                     <div
                       key={idx}
-                      className="p-3 bg-white/80 border border-slate-200/60 rounded-xl shadow-sm flex flex-col items-center justify-center text-center gap-1.5 hover:shadow-md hover:bg-white transition-all group"
+                      className="p-3 bg-white/85 border border-slate-200/80 rounded-xl shadow-sm flex flex-col items-center justify-center text-center gap-1.5 hover:shadow-md hover:bg-white transition-all group backdrop-blur-md"
                     >
                       <div className="p-2 rounded-lg bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-colors">
                         <IconComponent className="w-4 h-4" />
@@ -246,8 +258,8 @@ export default function LoginPage() {
             </div>
 
             {/* Banner Sustainability (Bawah Kiri) */}
-            <div className="pt-4">
-              <div className="inline-flex items-center gap-3 p-3.5 bg-white/80 border border-slate-200/80 rounded-2xl shadow-sm w-full sm:w-auto">
+            <div className="relative z-10 pt-6">
+              <div className="inline-flex items-center gap-3 p-3.5 bg-white/90 border border-slate-200/80 rounded-2xl shadow-sm w-full sm:w-auto backdrop-blur-md">
                 <div className="p-2 rounded-xl bg-blue-50 text-blue-600 shrink-0">
                   <Leaf className="w-4 h-4" />
                 </div>
@@ -260,8 +272,8 @@ export default function LoginPage() {
 
           </div>
 
-          {/* SISI KANAN: CARD FORM LOGIN */}
-          <div className="lg:col-span-5 flex flex-col justify-center">
+          {/* SISI KANAN: CARD FORM LOGIN (DI BALIK DARI GAMBAR PABRIK) */}
+          <div className="lg:col-span-5 p-6 lg:p-8 flex flex-col justify-center bg-white/60 backdrop-blur-md">
             <div className="bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden flex flex-col justify-between">
               
               {/* Content Form Inner */}
