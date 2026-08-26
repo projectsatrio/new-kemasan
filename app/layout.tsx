@@ -1,10 +1,9 @@
-// app/layout.tsx
-import type { Metadata } from 'next';
 import './globals.css';
+import { ThemeProvider } from 'next-themes';
 
-export const metadata: Metadata = {
-  title: 'ERP System',
-  description: 'Aplikasi ERP dengan Role Access',
+export const metadata = {
+  title: 'ERP System - PT. Kemasan Ciptatama Sempurna',
+  description: 'Sistem Informasi ERP Terintegrasi',
 };
 
 export default function RootLayout({
@@ -13,9 +12,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   return (
-    <html lang="id">
-      <body className="antialiased bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100">
-        {children}
+    <html lang="id" suppressHydrationWarning>
+      <body className="bg-gray-50 dark:bg-gray-900 text-gray-900 dark:text-gray-100 min-h-screen">
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );
