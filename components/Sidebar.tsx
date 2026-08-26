@@ -9,7 +9,6 @@ import {
   Package, 
   Truck, 
   FileText, 
-  Users, 
   Settings,
   Lock 
 } from 'lucide-react';
@@ -31,45 +30,44 @@ export default function Sidebar({ userRole }: SidebarProps) {
   ];
 
   return (
-    <aside className="w-64 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col justify-between min-h-screen transition-colors duration-200">
+    <aside className="w-64 bg-slate-900 dark:bg-slate-950 border-r border-slate-800 text-slate-100 flex flex-col justify-between min-h-screen shadow-xl transition-colors duration-200">
       <div className="p-4">
         {/* Header Logo */}
-        <div className="flex items-center gap-2 mb-8 px-2">
-          <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-lg">
+        <div className="flex items-center gap-3 mb-8 px-2 py-1">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-blue-600 to-cyan-400 flex items-center justify-center text-white font-black text-xl shadow-lg shadow-blue-500/30">
             K
           </div>
           <div>
-            <h2 className="font-bold text-gray-900 dark:text-white text-base leading-none">PT. KCS</h2>
-            <span className="text-xs text-gray-500 dark:text-gray-400">ERP System Integrated</span>
+            <h2 className="font-bold text-white text-sm tracking-wide leading-none">PT. KCS</h2>
+            <span className="text-[11px] text-blue-300 font-medium">ERP Integrated</span>
           </div>
         </div>
 
         {/* Info Role Active */}
-        <div className="mb-6 px-3 py-2 bg-gray-100 dark:bg-gray-700/50 rounded-md">
-          <p className="text-xs text-gray-500 dark:text-gray-400">Akses Hak User:</p>
-          <p className="text-sm font-semibold capitalize text-blue-600 dark:text-blue-400">{userRole}</p>
+        <div className="mb-6 px-3.5 py-2.5 bg-slate-800/80 border border-slate-700/50 rounded-xl">
+          <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">Akses Hak User</p>
+          <p className="text-xs font-bold capitalize text-cyan-400 mt-0.5">{userRole}</p>
         </div>
 
         {/* Menu Navigasi */}
-        <nav className="space-y-1">
+        <nav className="space-y-1.5">
           {navItems.map((item) => {
             const Icon = item.icon;
             const hasAccess = item.roles.includes(userRole);
             const isActive = pathname === item.href;
 
             if (!hasAccess) {
-              // Tampilan Menu Terkunci (Disabled / Different Color)
               return (
                 <div
                   key={item.href}
-                  className="flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 dark:text-gray-600 bg-gray-50/50 dark:bg-gray-800/30 cursor-not-allowed select-none opacity-60"
+                  className="flex items-center justify-between px-3.5 py-2.5 rounded-xl text-xs font-medium text-slate-500 bg-slate-800/30 border border-transparent cursor-not-allowed select-none opacity-50"
                   title="Akses Terkunci untuk Role Anda"
                 >
                   <div className="flex items-center gap-3">
-                    <Icon className="w-5 h-5 text-gray-400 dark:text-gray-600" />
+                    <Icon className="w-4 h-4 text-slate-500" />
                     <span>{item.label}</span>
                   </div>
-                  <Lock className="w-3.5 h-3.5 text-gray-400 dark:text-gray-600" />
+                  <Lock className="w-3.5 h-3.5 text-slate-500" />
                 </div>
               );
             }
@@ -78,13 +76,13 @@ export default function Sidebar({ userRole }: SidebarProps) {
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
                   isActive
-                    ? 'bg-blue-50 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 font-semibold'
-                    : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700/50'
+                    ? 'bg-blue-600 text-white shadow-lg shadow-blue-600/30'
+                    : 'text-slate-300 hover:bg-slate-800 hover:text-white'
                 }`}
               >
-                <Icon className="w-5 h-5" />
+                <Icon className="w-4 h-4" />
                 {item.label}
               </Link>
             );
@@ -92,7 +90,7 @@ export default function Sidebar({ userRole }: SidebarProps) {
         </nav>
       </div>
 
-      <div className="p-4 border-t border-gray-200 dark:border-gray-700 text-xs text-gray-400 text-center">
+      <div className="p-4 border-t border-slate-800 text-[11px] text-slate-500 text-center font-medium">
         v1.0.0 &copy; 2026 PT. KCS
       </div>
     </aside>
