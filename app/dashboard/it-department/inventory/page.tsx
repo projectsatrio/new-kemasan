@@ -63,8 +63,9 @@ export default function InventoryPage() {
   const [totalKeluarCount, setTotalKeluarCount] = useState(0);
   const [lowStockCount, setLowStockCount] = useState(0);
 
+  // Pagination & Rows Per Page State
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 6;
+  const [itemsPerPage, setItemsPerPage] = useState(5);
   const [totalItems, setTotalItems] = useState(0);
 
   // Modal State Histori Per Item
@@ -128,7 +129,6 @@ export default function InventoryPage() {
       .from('inventory_mutations')
       .select('*', { count: 'exact' });
 
-    // Apply Dynamic Filters
     if (searchQuery.trim()) {
       query = query.or(`nama_barang.ilike.%${searchQuery.trim()}%,tujuan_user.ilike.%${searchQuery.trim()}%`);
     }
@@ -153,14 +153,13 @@ export default function InventoryPage() {
       setLogs(data as MutationLog[]);
       if (count !== null) setTotalItems(count);
     }
-  }, [currentPage, searchQuery, filterJenis, startDate, endDate]);
+  }, [currentPage, itemsPerPage, searchQuery, filterJenis, startDate, endDate]);
 
   useEffect(() => {
     fetchLogs();
     fetchStats();
   }, [fetchLogs]);
 
-  // Reset filter ke default
   const handleResetFilter = () => {
     setSearchQuery('');
     setFilterJenis('ALL');
@@ -299,10 +298,47 @@ export default function InventoryPage() {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      {/* Top Banner & Actions */}
+      
+      {/* STATS SUMMARY CARDS (DITARUH DI ATAS SENDIRI) */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
+          <div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Variasi Master Barang</p>
+            <h3 className="text-2xl font-black text-slate-800 mt-1">{totalMasterCount} <span className="text-xs font-semibold text-slate-400">Item</span></h3>
+            <p className="text-[10px] text-blue-600 font-semibold mt-1">Terdaftar di master stock</p>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center">
+            <Boxes className="w-6 h-6" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
+          <div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Mutasi Masuk</p>
+            <h3 className="text-2xl font-black text-emerald-600 mt-1">{totalMasukCount} <span className="text-xs font-semibold text-slate-400">Transaksi</span></h3>
+            <p className="text-[10px] text-emerald-600 font-semibold mt-1">Stock internal bertambah</p>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <TrendingUp className="w-6 h-6" />
+          </div>
+        </div>
+
+        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center justify-between transition-all hover:shadow-md">
+          <div>
+            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Mutasi Keluar & Bekas</p>
+            <h3 className="text-2xl font-black text-rose-600 mt-1">{totalKeluarCount} <span className="text-xs font-semibold text-slate-400">Transaksi</span></h3>
+            <p className="text-[10px] text-rose-600 font-semibold mt-1">Pengeluaran & retur user</p>
+          </div>
+          <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center">
+            <TrendingDown className="w-6 h-6" />
+          </div>
+        </div>
+      </div>
+
+      {/* Top Header Banner & Actions */}
       <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+          <div className="w-12 h-12 rounded-2xl bg-slate-900 text-white flex items-center justify-center shadow-md">
             <Package className="w-6 h-6" />
           </div>
           <div>
@@ -314,7 +350,7 @@ export default function InventoryPage() {
         <div className="flex items-center gap-3">
           <Link
             href="/dashboard/it-department/inventory_sub"
-            className="relative bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all"
+            className="relative bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold px-4 py-2.5 rounded-xl shadow-md flex items-center gap-2 transition-all"
           >
             <Layers className="w-4 h-4" />
             Subtotal Master Stok
@@ -595,10 +631,11 @@ export default function InventoryPage() {
                       <tr key={log.id} className="hover:bg-slate-50/80 transition-colors">
                         <td className="py-3 px-4 text-slate-500 font-medium">{log.tanggal}</td>
                         <td className="py-3 px-4">
+                          {/* WARNA TEKS DIBUAT HITAM TEGAS (text-slate-900) */}
                           <button
                             type="button"
                             onClick={() => handleOpenItemHistory(log.nama_barang)}
-                            className="font-bold text-blue-600 hover:underline text-left flex items-center gap-1.5 group"
+                            className="font-bold text-slate-900 hover:text-blue-600 hover:underline text-left flex items-center gap-1.5 group transition-colors"
                             title="Klik untuk lihat audit riwayat barang"
                           >
                             <span>{log.nama_barang}</span>
@@ -630,12 +667,30 @@ export default function InventoryPage() {
             </div>
           </div>
 
-          {/* Pagination */}
-          <div className="flex items-center justify-between pt-4 border-t border-slate-100">
-            <p className="text-xs text-slate-500 font-medium">
-              Menampilkan Halaman <span className="font-bold text-slate-800">{currentPage}</span> dari <span className="font-bold text-slate-800">{totalPages}</span>
-            </p>
+          {/* CLEAN PAGINATION WITH SELECTOR (5, 10, 25, 50, 100) */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-slate-100">
             <div className="flex items-center gap-2">
+              <span className="text-xs text-slate-500 font-medium">Tampilkan:</span>
+              <select
+                value={itemsPerPage}
+                onChange={(e) => {
+                  setItemsPerPage(Number(e.target.value));
+                  setCurrentPage(1);
+                }}
+                className="px-2.5 py-1 bg-slate-50 border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value={5}>5 Data</option>
+                <option value={10}>10 Data</option>
+                <option value={25}>25 Data</option>
+                <option value={50}>50 Data</option>
+                <option value={100}>100 Data</option>
+              </select>
+              <span className="text-xs text-slate-400 font-medium">
+                (Hal. <b>{currentPage}</b> dari <b>{totalPages}</b>)
+              </span>
+            </div>
+
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 disabled={currentPage === 1}
@@ -656,42 +711,6 @@ export default function InventoryPage() {
           </div>
         </div>
 
-      </div>
-
-      {/* Stats Summary */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-2">
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Variasi Master Barang</p>
-            <h3 className="text-2xl font-black text-slate-800 mt-1">{totalMasterCount} <span className="text-xs font-semibold text-slate-400">Item</span></h3>
-            <p className="text-[10px] text-blue-600 font-medium mt-1">Terdaftar di master stock</p>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
-            <Boxes className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Mutasi Masuk</p>
-            <h3 className="text-2xl font-black text-emerald-600 mt-1">{totalMasukCount} <span className="text-xs font-semibold text-slate-400">Transaksi</span></h3>
-            <p className="text-[10px] text-emerald-600 font-medium mt-1">Stock internal bertambah</p>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
-            <TrendingUp className="w-6 h-6" />
-          </div>
-        </div>
-
-        <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Mutasi Keluar & Bekas</p>
-            <h3 className="text-2xl font-black text-rose-600 mt-1">{totalKeluarCount} <span className="text-xs font-semibold text-slate-400">Transaksi</span></h3>
-            <p className="text-[10px] text-rose-600 font-medium mt-1">Pengeluaran & retur user</p>
-          </div>
-          <div className="w-12 h-12 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
-            <TrendingDown className="w-6 h-6" />
-          </div>
-        </div>
       </div>
 
       {/* MODAL AUDIT HISTORI PER ITEM */}
