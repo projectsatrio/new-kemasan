@@ -12,7 +12,9 @@ import {
   Lock, 
   Unlock, 
   Loader2, 
-  Filter 
+  Filter,
+  ChevronLeft,
+  ChevronRight
 } from 'lucide-react';
 
 interface Voucher {
@@ -20,7 +22,7 @@ interface Voucher {
   kode_voucher: string;
   nama_pemilik: string;
   lokasi: string;
-  speed_limit: string;
+  speed: string;
   status: 'open' | 'lock';
   bulan: number;
   tahun: number;
@@ -31,6 +33,10 @@ export default function WifiManagementPage() {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 5;
+
   // Filter Periode
   const currentDate = new Date();
   const [selectedMonth, setSelectedMonth] = useState<number>(currentDate.getMonth() + 1);
@@ -41,7 +47,7 @@ export default function WifiManagementPage() {
     kode_voucher: '',
     nama_pemilik: '',
     lokasi: '',
-    speed_limit: '15Mbps/15Mbps',
+    speed: '15Mbps/15Mbps',
     status: 'open',
     bulan: currentDate.getMonth() + 1,
     tahun: currentDate.getFullYear()
@@ -75,6 +81,7 @@ export default function WifiManagementPage() {
 
       if (error) throw error;
       setVouchers(data || []);
+      setCurrentPage(1); // Reset ke halaman 1 saat reload data
     } catch (err: any) {
       alert('Gagal mengambil data: ' + err.message);
     } finally {
@@ -98,7 +105,15 @@ export default function WifiManagementPage() {
     try {
       const { error } = await supabase
         .from('wifi_vouchers')
-        .insert([{ ...form, bulan: selectedMonth, tahun: selectedYear }]);
+        .insert([{ 
+          kode_voucher: form.kode_voucher,
+          nama_pemilik: form.nama_pemilik,
+          lokasi: form.lokasi,
+          speed: form.speed,
+          status: form.status,
+          bulan: selectedMonth, 
+          tahun: selectedYear 
+        }]);
 
       if (error) throw error;
       alert('Voucher berhasil ditambahkan!');
@@ -106,7 +121,7 @@ export default function WifiManagementPage() {
         kode_voucher: '',
         nama_pemilik: '',
         lokasi: '',
-        speed_limit: '15Mbps/15Mbps',
+        speed: '15Mbps/15Mbps',
         status: 'open',
         bulan: selectedMonth,
         tahun: selectedYear
@@ -153,14 +168,14 @@ export default function WifiManagementPage() {
           const kode = kodeIdx !== -1 ? cols[kodeIdx] : cols[0];
           const nama = namaIdx !== -1 ? cols[namaIdx] : cols[4];
           const lokasi = lokasiIdx !== -1 ? cols[lokasiIdx] : (cols[5] || '-');
-          const speed = speedIdx !== -1 ? cols[speedIdx] : (cols[13] || '15Mbps/15Mbps');
+          const speedVal = speedIdx !== -1 ? cols[speedIdx] : (cols[13] || '15Mbps/15Mbps');
 
           if (kode && nama) {
             formattedData.push({
               kode_voucher: kode,
               nama_pemilik: nama,
               lokasi: lokasi || '-',
-              speed_limit: speed || '15Mbps/15Mbps',
+              speed: speedVal || '15Mbps/15Mbps',
               status: 'open',
               bulan: selectedMonth,
               tahun: selectedYear
@@ -219,6 +234,16 @@ export default function WifiManagementPage() {
     v.kode_voucher.toLowerCase().includes(searchQuery.toLowerCase()) ||
     v.lokasi.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Pagination Logic
+  const totalPages = Math.ceil(filteredVouchers.length / itemsPerPage) || 1;
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const paginatedVouchers = filteredVouchers.slice(startIndex, startIndex + itemsPerPage);
+
+  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value);
+    setCurrentPage(1);
+  };
 
   return (
     <div className="p-6 space-y-6 max-w-7xl mx-auto">
@@ -315,8 +340,8 @@ export default function WifiManagementPage() {
               <input 
                 type="text"
                 placeholder="15Mbps/15Mbps"
-                value={form.speed_limit}
-                onChange={e => setForm({...form, speed_limit: e.target.value})}
+                value={form.speed}
+                onChange={e => setForm({...form, speed: e.target.value})}
                 className="w-full mt-1 p-2.5 text-xs bg-slate-50 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600"
               />
             </div>
@@ -369,7 +394,7 @@ export default function WifiManagementPage() {
               type="text"
               placeholder="Cari Nama / Kode / Lokasi..."
               value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
+              onChange={handleSearchChange}
               className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-blue-500/20"
             />
           </div>
@@ -411,19 +436,19 @@ export default function WifiManagementPage() {
                     Memuat data voucher...
                   </td>
                 </tr>
-              ) : filteredVouchers.length === 0 ? (
+              ) : paginatedVouchers.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="p-8 text-center text-slate-400 font-medium">
                     Tidak ada data voucher ditemukan.
                   </td>
                 </tr>
               ) : (
-                filteredVouchers.map((v) => (
+                paginatedVouchers.map((v) => (
                   <tr key={v.id} className="hover:bg-slate-50/80 transition-colors">
                     <td className="p-4 font-mono font-bold text-blue-600">{v.kode_voucher}</td>
                     <td className="p-4 font-bold text-slate-900">{v.nama_pemilik}</td>
                     <td className="p-4 font-medium text-slate-600">{v.lokasi || '-'}</td>
-                    <td className="p-4 font-medium text-slate-600">{v.speed_limit || '-'}</td>
+                    <td className="p-4 font-medium text-slate-600">{v.speed || '-'}</td>
                     <td className="p-4 font-medium text-slate-500">{v.bulan}/{v.tahun}</td>
                     <td className="p-4 text-center">
                       <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold uppercase ${
@@ -453,6 +478,51 @@ export default function WifiManagementPage() {
             </tbody>
           </table>
         </div>
+
+        {/* PAGINATION CONTROLS */}
+        {!loading && filteredVouchers.length > 0 && (
+          <div className="p-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 print:hidden">
+            <div>
+              Menampilkan <span className="font-bold text-slate-800">{startIndex + 1}</span> - <span className="font-bold text-slate-800">{Math.min(startIndex + itemsPerPage, filteredVouchers.length)}</span> dari <span className="font-bold text-slate-800">{filteredVouchers.length}</span> voucher
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                disabled={currentPage === 1}
+                className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                title="Halaman Sebelumnya"
+              >
+                <ChevronLeft className="w-4 h-4 text-slate-600" />
+              </button>
+
+              <div className="flex items-center gap-1">
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition-all ${
+                      currentPage === page
+                        ? 'bg-blue-600 text-white shadow-sm shadow-blue-500/20'
+                        : 'text-slate-600 hover:bg-slate-100 border border-transparent'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                disabled={currentPage === totalPages}
+                className="p-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+                title="Halaman Selanjutnya"
+              >
+                <ChevronRight className="w-4 h-4 text-slate-600" />
+              </button>
+            </div>
+          </div>
+        )}
 
       </div>
 
