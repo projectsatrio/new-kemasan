@@ -206,21 +206,20 @@ export default function WifiClaimPage() {
     };
   }, []);
 
-  // Handle Claim (Langsung koneksi Supabase di Client side)
+  // Handle Claim (TETAP SAMA DENGAN DATABASE SUPABASE ASLI)
   const handleClaim = async (e: React.FormEvent) => {
     e.preventDefault();
-    const queryName = namaSearch.trim();
-    if (!queryName) return;
+    if (!namaSearch.trim()) return;
 
     setLoading(true);
     setResultMessage({ type: null, message: '' });
 
     try {
-      // Cari data nama di Supabase (Case Insensitive & Substring match)
+      // Cari data nama di Supabase (Case Insensitive)
       const { data, error } = await supabase
         .from('wifi_vouchers')
         .select('*')
-        .ilike('nama_pemilik', `%${queryName}%`)
+        .ilike('nama_pemilik', namaSearch.trim())
         .limit(1);
 
       if (error) throw error;
@@ -228,7 +227,7 @@ export default function WifiClaimPage() {
       if (!data || data.length === 0) {
         setResultMessage({
           type: 'not_found',
-          message: 'Nama tidak terdaftar di database Supabase.'
+          message: 'Nama tidak terdaftar di Supabase.'
         });
         setLoading(false);
         return;
@@ -240,7 +239,7 @@ export default function WifiClaimPage() {
       if (voucher.status === 'Lock' || voucher.status === 'Digunakan') {
         setResultMessage({
           type: 'claimed',
-          message: 'Voucher sudah pernah diclaim, silakan hubungi Tim IT jika bermasalah.',
+          message: 'Voucher sudah diclaim, hubungi IT.',
           voucherData: voucher
         });
         setLoading(false);
@@ -257,7 +256,7 @@ export default function WifiClaimPage() {
 
       setResultMessage({
         type: 'success',
-        message: `Selamat bekerja, ${voucher.nama_pemilik}!`,
+        message: `Selamat bekerja ${voucher.nama_pemilik}!`,
         voucherData: { ...voucher, status: 'Lock' }
       });
 
@@ -265,20 +264,20 @@ export default function WifiClaimPage() {
       triggerBalloonExplosion();
 
     } catch (err: any) {
-      alert('Terjadi kesalahan saat memproses data: ' + err.message);
+      alert('Terjadi kesalahan: ' + err.message);
     } finally {
       setLoading(false);
     }
   };
 
   const copyVoucher = (code: string) => {
-    if (!code) return;
     navigator.clipboard.writeText(code);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   return (
+    /* FIXED INSET-0 Z-[9999] AGAR MENUTUPI SIDEBAR DASHBOARD SEPENUHNYA */
     <div className="fixed inset-0 z-[9999] w-screen h-screen bg-slate-950 text-slate-100 overflow-y-auto overflow-x-hidden flex items-center justify-center p-4 lg:p-10 font-sans selection:bg-blue-500 selection:text-white">
       
       {/* BACKGROUND CANVAS JARING-JARING + BALON */}
@@ -352,7 +351,7 @@ export default function WifiClaimPage() {
         
         {/* NOT FOUND ALERT */}
         {resultMessage.type === 'not_found' && (
-          <div className="p-4 bg-rose-950/40 border border-rose-500/30 rounded-2xl flex items-center gap-3.5 text-rose-300 shadow-lg backdrop-blur-md">
+          <div className="p-4 bg-rose-950/40 border border-rose-500/30 rounded-2xl flex items-center gap-3.5 text-rose-300 animate-shake shadow-lg backdrop-blur-md">
             <div className="p-2 bg-rose-500/20 rounded-xl border border-rose-500/30">
               <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0" />
             </div>
@@ -372,7 +371,7 @@ export default function WifiClaimPage() {
 
         {/* SUCCESS NOTIFICATION & KARD VOUCHER PREMIUM */}
         {resultMessage.type === 'success' && resultMessage.voucherData && (
-          <div className="space-y-4 pt-1">
+          <div className="space-y-4 pt-1 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="p-4 bg-emerald-950/40 border border-emerald-500/30 rounded-2xl flex items-center gap-3.5 text-emerald-300 shadow-lg backdrop-blur-md">
               <div className="p-2 bg-emerald-500/20 rounded-xl border border-emerald-500/30">
                 <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0" />
@@ -394,7 +393,6 @@ export default function WifiClaimPage() {
                     {resultMessage.voucherData.kode_voucher}
                   </div>
                   <button 
-                    type="button"
                     onClick={() => copyVoucher(resultMessage.voucherData.kode_voucher)}
                     className="p-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-600/50 transition-colors"
                     title="Salin Kode"
@@ -409,7 +407,7 @@ export default function WifiClaimPage() {
                   <Gauge className="w-5 h-5 text-blue-400 shrink-0" />
                   <div>
                     <p className="text-[10px] text-slate-400 font-medium">Kecepatan</p>
-                    <p className="font-bold text-slate-100">{resultMessage.voucherData.batasan_kecepatan || '-'}</p>
+                    <p className="font-bold text-slate-100">{resultMessage.voucherData.batasan_kecepatan}</p>
                   </div>
                 </div>
 
@@ -417,7 +415,7 @@ export default function WifiClaimPage() {
                   <MapPin className="w-5 h-5 text-blue-400 shrink-0" />
                   <div>
                     <p className="text-[10px] text-slate-400 font-medium">Lokasi</p>
-                    <p className="font-bold text-slate-100">{resultMessage.voucherData.lokasi || '-'}</p>
+                    <p className="font-bold text-slate-100">{resultMessage.voucherData.lokasi}</p>
                   </div>
                 </div>
               </div>
