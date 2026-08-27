@@ -266,7 +266,7 @@ export default function WifiClaimPage() {
 
     } catch (err: any) {
       alert('Terjadi kesalahan saat memproses data: ' + err.message);
-    } font-sans finally {
+    } finally {
       setLoading(false);
     }
   };
