@@ -4,18 +4,16 @@ import { useState, useEffect, useRef } from 'react';
 import { supabase } from '@/lib/supabaseClient';
 import { 
   Wifi, 
-  Search, 
   CheckCircle2, 
   AlertTriangle, 
-  Lock, 
   MapPin, 
   Gauge, 
   ShieldAlert, 
   UserCheck,
-  Sparkles,
-  Zap,
+  User,
   Copy,
-  Check
+  Check,
+  Lock
 } from 'lucide-react';
 
 export default function WifiClaimPage() {
@@ -29,35 +27,31 @@ export default function WifiClaimPage() {
   }>({ type: null, message: '' });
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
-  const particlesRef = useRef<any[]>([]);
+  const bubblesRef = useRef<any[]>([]);
 
-  // TRIGGER LEDAKAN BALON / CONFETTI
-  const triggerBalloonExplosion = () => {
+  // EFEK GELEMBUNG UDARA (AIR BUBBLES EXPLOSION)
+  const triggerAirBubbles = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     const width = canvas.width;
     const height = canvas.height;
-    const colors = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4'];
 
-    for (let i = 0; i < 120; i++) {
-      particlesRef.current.push({
-        x: width / 2,
-        y: height / 2 + 100,
-        vx: (Math.random() - 0.5) * 18,
-        vy: (Math.random() - 0.8) * 22,
-        size: Math.random() * 10 + 6,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        alpha: 1,
-        rotation: Math.random() * 360,
-        vRot: (Math.random() - 0.5) * 10,
-        shape: Math.random() > 0.4 ? 'circle' : 'rect',
-        gravity: 0.35,
-        drag: 0.96
+    // Buat 50-70 gelembung udara naik ke atas
+    for (let i = 0; i < 60; i++) {
+      bubblesRef.current.push({
+        x: width / 2 + (Math.random() - 0.5) * 350,
+        y: height / 2 + 100 + Math.random() * 100,
+        radius: Math.random() * 12 + 4,
+        speedY: Math.random() * 3 + 1.5,
+        speedX: (Math.random() - 0.5) * 1.2,
+        alpha: Math.random() * 0.6 + 0.3,
+        wobble: Math.random() * Math.PI * 2,
+        wobbleSpeed: Math.random() * 0.05 + 0.02
       });
     }
   };
 
-  // EFEK JARING-JARING + ANIMASI BALON LEDAKAN
+  // EFEK JARING-JARING SIMPUL BLUE + GELEMBUNG UDARA
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -87,7 +81,7 @@ export default function WifiClaimPage() {
     };
     window.addEventListener('mousemove', handleMouseMove);
 
-    const particleCount = Math.min(Math.floor((width * height) / 9000), 100);
+    const particleCount = Math.min(Math.floor((width * height) / 9000), 90);
     const particles: Array<{
       x: number;
       y: number;
@@ -100,8 +94,8 @@ export default function WifiClaimPage() {
       particles.push({
         x: Math.random() * width,
         y: Math.random() * height,
-        vx: (Math.random() - 0.5) * 0.7,
-        vy: (Math.random() - 0.5) * 0.7,
+        vx: (Math.random() - 0.5) * 0.6,
+        vy: (Math.random() - 0.5) * 0.6,
         radius: Math.random() * 2 + 1.5,
       });
     }
@@ -109,7 +103,7 @@ export default function WifiClaimPage() {
     const render = () => {
       ctx.clearRect(0, 0, width, height);
 
-      // 1. Render Jaring-jaring Background
+      // 1. Render Jaring-jaring Simpul Biru (Sesuai Referensi Gambar)
       for (let i = 0; i < particles.length; i++) {
         const p = particles[i];
 
@@ -127,13 +121,13 @@ export default function WifiClaimPage() {
           const force = (mouse.radius - distance) / mouse.radius;
           const dirX = dx / distance;
           const dirY = dy / distance;
-          p.x += dirX * force * 3.5;
-          p.y += dirY * force * 3.5;
+          p.x += dirX * force * 3;
+          p.y += dirY * force * 3;
         }
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(37, 99, 235, 0.45)';
+        ctx.fillStyle = 'rgba(37, 99, 235, 0.5)';
         ctx.fill();
 
         for (let j = i + 1; j < particles.length; j++) {
@@ -141,56 +135,67 @@ export default function WifiClaimPage() {
           const distanceP = Math.sqrt((p.x - p2.x) ** 2 + (p.y - p2.y) ** 2);
 
           if (distanceP < 130) {
-            const alpha = (1 - distanceP / 130) * 0.25;
+            const alpha = (1 - distanceP / 130) * 0.3;
             ctx.beginPath();
             ctx.moveTo(p.x, p.y);
             ctx.lineTo(p2.x, p2.y);
             ctx.strokeStyle = `rgba(59, 130, 246, ${alpha})`;
-            ctx.lineWidth = 0.9;
+            ctx.lineWidth = 0.8;
             ctx.stroke();
           }
         }
-
-        if (distance < mouse.radius) {
-          const alpha = (1 - distance / mouse.radius) * 0.5;
-          ctx.beginPath();
-          ctx.moveTo(p.x, p.y);
-          ctx.lineTo(mouse.x, mouse.y);
-          ctx.strokeStyle = `rgba(29, 78, 216, ${alpha})`;
-          ctx.lineWidth = 1.3;
-          ctx.stroke();
-        }
       }
 
-      // 2. Render Ledakan Balon / Confetti
-      for (let k = particlesRef.current.length - 1; k >= 0; k--) {
-        const bp = particlesRef.current[k];
-        bp.vx *= bp.drag;
-        bp.vy *= bp.drag;
-        bp.vy += bp.gravity;
-        bp.x += bp.vx;
-        bp.y += bp.vy;
-        bp.rotation += bp.vRot;
-        bp.alpha -= 0.008;
+      // 2. Render Animasi Gelembung Udara Melayang (Air Bubbles)
+      for (let b = bubblesRef.current.length - 1; b >= 0; b--) {
+        const bubble = bubblesRef.current[b];
+        bubble.y -= bubble.speedY;
+        bubble.wobble += bubble.wobbleSpeed;
+        bubble.x += Math.sin(bubble.wobble) * bubble.speedX;
+        bubble.alpha -= 0.003;
 
-        if (bp.alpha <= 0) {
-          particlesRef.current.splice(k, 1);
+        if (bubble.y < -20 || bubble.alpha <= 0) {
+          bubblesRef.current.splice(b, 1);
           continue;
         }
 
         ctx.save();
-        ctx.globalAlpha = Math.max(0, bp.alpha);
-        ctx.translate(bp.x, bp.y);
-        ctx.rotate((bp.rotation * Math.PI) / 180);
+        ctx.beginPath();
+        ctx.arc(bubble.x, bubble.y, bubble.radius, 0, Math.PI * 2);
+        
+        // Buat gradasi kilauan gelembung udara transparan
+        const gradient = ctx.createRadialGradient(
+          bubble.x - bubble.radius * 0.3,
+          bubble.y - bubble.radius * 0.3,
+          bubble.radius * 0.1,
+          bubble.x,
+          bubble.y,
+          bubble.radius
+        );
+        gradient.addColorStop(0, `rgba(255, 255, 255, ${bubble.alpha + 0.2})`);
+        gradient.addColorStop(0.6, `rgba(147, 197, 253, ${bubble.alpha * 0.4})`);
+        gradient.addColorStop(1, `rgba(59, 130, 246, ${bubble.alpha * 0.6})`);
 
-        ctx.fillStyle = bp.color;
-        if (bp.shape === 'circle') {
-          ctx.beginPath();
-          ctx.arc(0, 0, bp.size, 0, Math.PI * 2);
-          ctx.fill();
-        } else {
-          ctx.fillRect(-bp.size / 2, -bp.size / 2, bp.size, bp.size * 0.6);
-        }
+        ctx.fillStyle = gradient;
+        ctx.fill();
+
+        // Border kilap gelembung
+        ctx.strokeStyle = `rgba(255, 255, 255, ${bubble.alpha * 0.7})`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Highlight pantulan cahaya kecil di gelembung
+        ctx.beginPath();
+        ctx.arc(
+          bubble.x - bubble.radius * 0.4,
+          bubble.y - bubble.radius * 0.4,
+          bubble.radius * 0.25,
+          0,
+          Math.PI * 2
+        );
+        ctx.fillStyle = `rgba(255, 255, 255, ${bubble.alpha * 0.9})`;
+        ctx.fill();
+
         ctx.restore();
       }
 
@@ -206,7 +211,7 @@ export default function WifiClaimPage() {
     };
   }, []);
 
-  // Handle Claim (TETAP SAMA DENGAN DATABASE SUPABASE ASLI)
+  // Handle Claim
   const handleClaim = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!namaSearch.trim()) return;
@@ -215,7 +220,6 @@ export default function WifiClaimPage() {
     setResultMessage({ type: null, message: '' });
 
     try {
-      // Cari data nama di Supabase (Case Insensitive)
       const { data, error } = await supabase
         .from('wifi_vouchers')
         .select('*')
@@ -235,8 +239,7 @@ export default function WifiClaimPage() {
 
       const voucher = data[0];
 
-      // Cek Status jika sudah Lock / Digunakan
-      if (voucher.status === 'Lock' || voucher.status === 'Digunakan') {
+      if (voucher.status === 'Lock' || voucher.status === 'Digunakan' || voucher.status === 'lock') {
         setResultMessage({
           type: 'claimed',
           message: 'Voucher sudah diclaim, hubungi IT.',
@@ -246,10 +249,9 @@ export default function WifiClaimPage() {
         return;
       }
 
-      // Jika Open -> Update status jadi Lock
       const { error: updateErr } = await supabase
         .from('wifi_vouchers')
-        .update({ status: 'Lock' })
+        .update({ status: 'lock' })
         .eq('id', voucher.id);
 
       if (updateErr) throw updateErr;
@@ -257,11 +259,11 @@ export default function WifiClaimPage() {
       setResultMessage({
         type: 'success',
         message: `Selamat bekerja ${voucher.nama_pemilik}!`,
-        voucherData: { ...voucher, status: 'Lock' }
+        voucherData: { ...voucher, status: 'lock' }
       });
 
-      // TRIGGER LEDAKAN BALON SAAT SUKSES
-      triggerBalloonExplosion();
+      // PANGGUL EFEK GELEMBUNG UDARA SAAT BERHASIL
+      triggerAirBubbles();
 
     } catch (err: any) {
       alert('Terjadi kesalahan: ' + err.message);
@@ -277,158 +279,169 @@ export default function WifiClaimPage() {
   };
 
   return (
-    /* FIXED INSET-0 Z-[9999] AGAR MENUTUPI SIDEBAR DASHBOARD SEPENUHNYA */
-    <div className="fixed inset-0 z-[9999] w-screen h-screen bg-slate-950 text-slate-100 overflow-y-auto overflow-x-hidden flex items-center justify-center p-4 lg:p-10 font-sans selection:bg-blue-500 selection:text-white">
+    <div className="fixed inset-0 z-[9999] w-screen h-screen bg-gradient-to-br from-[#dcebfa] via-[#eaf3fc] to-[#d5e7f9] text-slate-800 overflow-y-auto overflow-x-hidden flex flex-col items-center justify-center p-4 lg:p-10 font-sans selection:bg-blue-500 selection:text-white">
       
-      {/* BACKGROUND CANVAS JARING-JARING + BALON */}
+      {/* CANVAS BACKGROUND */}
       <canvas
         ref={canvasRef}
         className="fixed inset-0 z-0 pointer-events-none"
       />
 
-      {/* LIGHT GLOW AMBIENT BACKGROUND */}
-      <div className="fixed top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-blue-600/15 rounded-full blur-[160px] pointer-events-none"></div>
-      <div className="fixed bottom-10 right-10 w-[400px] h-[400px] bg-sky-500/10 rounded-full blur-[140px] pointer-events-none"></div>
+      {/* WATERMARK EMBLEM BACKGROUND (KEMASAN CIPTA / YOUR PARTNER) */}
+      <div className="fixed inset-0 flex items-center justify-center pointer-events-none z-0 opacity-[0.07] select-none">
+        <div className="text-center font-black text-slate-900 tracking-tighter">
+          <span className="text-[14vw] block leading-none">KCS</span>
+          <span className="text-[3vw] tracking-[0.3em] font-extrabold text-slate-700 block mt-2">YOUR PARTNER</span>
+        </div>
+      </div>
 
-      {/* CARD MAIN STANDALONE CONTAINER */}
-      <div className="w-full max-w-[540px] bg-slate-900/80 backdrop-blur-2xl border border-slate-800/80 rounded-[36px] shadow-[0_25px_70px_rgba(0,0,0,0.6)] p-6 md:p-10 relative z-10 space-y-7 transition-all">
+      {/* CARD UTAMA (GLASSMORPHISM PRESISI GAMBAR REFERENSI) */}
+      <div className="w-full max-w-[420px] bg-white/75 backdrop-blur-2xl border border-white/90 rounded-[32px] shadow-[0_20px_60px_rgba(37,99,235,0.12)] p-8 relative z-10 space-y-6 transition-all duration-300">
         
-        {/* LOGO & TITLE HEADER */}
-        <div className="text-center space-y-4">
-          <div className="inline-block p-3 rounded-2xl bg-slate-800/60 border border-slate-700/50 shadow-inner">
-            <img 
-              src="https://kemasancipta.com/wp-content/uploads/2021/01/WEBSITE-KCS-logo-2025-1024x346.png" 
-              alt="PT. KCS Logo" 
-              className="h-9 mx-auto object-contain brightness-110 drop-shadow-[0_0_12px_rgba(59,130,246,0.3)]"
-            />
+        {/* LOGO ICON & TITLE HEADER */}
+        <div className="text-center space-y-3">
+          <div className="w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shadow-lg shadow-blue-500/30 text-white">
+            <Wifi className="w-7 h-7" />
           </div>
-          <div className="space-y-1">
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-500/10 border border-blue-500/20 text-[10px] font-black tracking-widest text-blue-400 uppercase">
-              <Sparkles className="w-3 h-3 text-blue-400 animate-pulse" /> IT Infrastructure Service
-            </div>
-            <h1 className="text-2xl md:text-3xl font-black text-white tracking-tight">Klaim Voucher WiFi Kantor</h1>
+          <div>
+            <h1 className="text-lg font-black text-slate-900 tracking-tight uppercase">KEMASAN CIPTA</h1>
+            <p className="text-[10px] font-bold tracking-widest text-blue-600 uppercase">WI-FI ACCESS PORTAL</p>
           </div>
         </div>
 
         {/* CLAIM FORM */}
         <form onSubmit={handleClaim} className="space-y-4">
           <div>
-            <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2.5">
-              Masukkan Nama Terdaftar
-            </label>
-            <div className="relative group">
-              <UserCheck className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 group-focus-within:text-blue-400 transition-colors" />
-              <input 
-                type="text" 
-                value={namaSearch}
-                onChange={(e) => setNamaSearch(e.target.value)}
-                placeholder="Ketik Nama Anda (Contoh: Shafiq)"
-                className="w-full pl-12 pr-4 py-4 bg-slate-950/70 border border-slate-700/80 rounded-2xl text-sm font-semibold text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/80 focus:border-blue-500 transition-all shadow-inner"
-                required
-              />
-            </div>
+            <input 
+              type="text" 
+              value={namaSearch}
+              onChange={(e) => setNamaSearch(e.target.value)}
+              placeholder="Input Your Name..."
+              className="w-full px-5 py-3.5 bg-white/90 border border-slate-200/90 rounded-2xl text-xs font-semibold text-slate-800 placeholder-slate-400 text-center focus:outline-none focus:ring-2 focus:ring-blue-500/40 focus:border-blue-500 transition-all shadow-sm"
+              required
+            />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-gradient-to-r from-blue-600 via-blue-500 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-black py-4 rounded-2xl shadow-[0_10px_30px_rgba(37,99,235,0.4)] transition-all duration-300 text-xs uppercase tracking-wider flex items-center justify-center gap-2 disabled:opacity-50 active:scale-[0.99]"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-black py-3.5 rounded-2xl shadow-lg shadow-blue-600/30 transition-all duration-200 text-xs uppercase tracking-wider flex items-center justify-center gap-2 active:scale-[0.98] disabled:opacity-50"
           >
             {loading ? (
               <span className="inline-flex items-center gap-2">
                 <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
-                Memeriksa Data...
+                Processing...
               </span>
             ) : (
               <>
-                <Wifi className="w-4 h-4" /> Klaim Voucher WiFi
+                <Wifi className="w-4 h-4" /> CLAIM VOUCHER
               </>
             )}
           </button>
         </form>
 
-        {/* NOTIFIKASI PREMIUM & HASIL KLAIM */}
+        {/* NOTIFIKASI & KARTU DETAIL HASIL CLAIM */}
         
-        {/* NOT FOUND ALERT */}
+        {/* NOT FOUND */}
         {resultMessage.type === 'not_found' && (
-          <div className="p-4 bg-rose-950/40 border border-rose-500/30 rounded-2xl flex items-center gap-3.5 text-rose-300 animate-shake shadow-lg backdrop-blur-md">
-            <div className="p-2 bg-rose-500/20 rounded-xl border border-rose-500/30">
-              <ShieldAlert className="w-5 h-5 text-rose-400 shrink-0" />
-            </div>
-            <span className="text-xs font-semibold leading-relaxed">{resultMessage.message}</span>
+          <div className="p-4 bg-rose-50/90 border border-rose-200 rounded-2xl flex items-center gap-3 text-rose-700 shadow-sm">
+            <ShieldAlert className="w-5 h-5 text-rose-500 shrink-0" />
+            <span className="text-xs font-semibold">{resultMessage.message}</span>
           </div>
         )}
 
-        {/* CLAIMED ALERT */}
+        {/* CLAIMED / LOCKED */}
         {resultMessage.type === 'claimed' && (
-          <div className="p-4 bg-amber-950/40 border border-amber-500/30 rounded-2xl flex items-center gap-3.5 text-amber-300 shadow-lg backdrop-blur-md">
-            <div className="p-2 bg-amber-500/20 rounded-xl border border-amber-500/30">
-              <AlertTriangle className="w-5 h-5 text-amber-400 shrink-0" />
-            </div>
-            <span className="text-xs font-semibold leading-relaxed">{resultMessage.message}</span>
+          <div className="p-4 bg-amber-50/90 border border-amber-200 rounded-2xl flex items-center gap-3 text-amber-800 shadow-sm">
+            <AlertTriangle className="w-5 h-5 text-amber-600 shrink-0" />
+            <span className="text-xs font-semibold">{resultMessage.message}</span>
           </div>
         )}
 
-        {/* SUCCESS NOTIFICATION & KARD VOUCHER PREMIUM */}
+        {/* SUCCESS (TAMPILKAN DETAIL lengkap KODE VOUCHER, STATUS, NAMA PEMILIK, LOKASI, SPEED) */}
         {resultMessage.type === 'success' && resultMessage.voucherData && (
-          <div className="space-y-4 pt-1 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="p-4 bg-emerald-950/40 border border-emerald-500/30 rounded-2xl flex items-center gap-3.5 text-emerald-300 shadow-lg backdrop-blur-md">
-              <div className="p-2 bg-emerald-500/20 rounded-xl border border-emerald-500/30">
-                <CheckCircle2 className="w-6 h-6 text-emerald-400 shrink-0" />
-              </div>
-              <span className="text-sm font-bold">{resultMessage.message}</span>
+          <div className="space-y-4 pt-1 animate-in fade-in zoom-in-95 duration-300">
+            <div className="p-3.5 bg-emerald-50/90 border border-emerald-200 rounded-2xl flex items-center gap-3 text-emerald-800 shadow-sm">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+              <span className="text-xs font-bold">{resultMessage.message}</span>
             </div>
 
-            {/* BOX KODE VOUCHER DETAIL */}
-            <div className="bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white p-6 rounded-3xl border border-blue-500/30 shadow-[0_15px_40px_rgba(0,0,0,0.5)] space-y-5 relative overflow-hidden group">
-              <div className="absolute right-0 top-0 translate-x-6 -translate-y-6 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl group-hover:bg-blue-500/30 transition-all duration-700"></div>
-
-              <div className="text-center space-y-2 relative z-10">
-                <div className="inline-flex items-center gap-1.5 text-[10px] uppercase tracking-widest text-blue-300 font-bold bg-blue-500/10 px-3 py-1 rounded-full border border-blue-500/20">
-                  <Zap className="w-3 h-3 text-yellow-400 fill-yellow-400" /> KODE VOUCHER ANDA
-                </div>
-                
-                <div className="flex items-center justify-center gap-3 pt-1">
-                  <div className="text-3xl md:text-4xl font-black tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-200 font-mono py-1 drop-shadow-md">
+            {/* CARD VOUCHER DETAIL */}
+            <div className="bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 text-white p-5 rounded-2xl shadow-xl space-y-4 border border-blue-500/20 relative overflow-hidden">
+              
+              {/* HEADER VOUCHER */}
+              <div className="text-center space-y-1">
+                <span className="text-[9px] uppercase tracking-widest text-blue-300 font-bold">KODE VOUCHER ANDA</span>
+                <div className="flex items-center justify-center gap-2">
+                  <span className="text-2xl font-black tracking-widest text-yellow-400 font-mono">
                     {resultMessage.voucherData.kode_voucher}
-                  </div>
+                  </span>
                   <button 
                     onClick={() => copyVoucher(resultMessage.voucherData.kode_voucher)}
-                    className="p-2 bg-slate-800/80 hover:bg-slate-700 text-slate-300 rounded-xl border border-slate-600/50 transition-colors"
-                    title="Salin Kode"
+                    className="p-1.5 bg-white/10 hover:bg-white/20 text-slate-200 rounded-lg transition-colors"
+                    title="Copy Kode"
                   >
-                    {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4" />}
+                    {copied ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
                   </button>
                 </div>
               </div>
 
-              <div className="border-t border-slate-800/80 pt-4 grid grid-cols-2 gap-3 text-xs relative z-10">
-                <div className="flex items-center gap-3 text-slate-300 bg-slate-950/40 p-3 rounded-2xl border border-slate-800/60">
-                  <Gauge className="w-5 h-5 text-blue-400 shrink-0" />
-                  <div>
-                    <p className="text-[10px] text-slate-400 font-medium">Kecepatan</p>
-                    <p className="font-bold text-slate-100">{resultMessage.voucherData.batasan_kecepatan}</p>
+              {/* Rincian Detail Data */}
+              <div className="border-t border-white/10 pt-3 space-y-2 text-xs">
+                
+                {/* NAMA PEMILIK */}
+                <div className="flex items-center justify-between text-slate-300">
+                  <div className="flex items-center gap-2">
+                    <User className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Nama Pemilik</span>
                   </div>
+                  <strong className="text-white font-semibold">{resultMessage.voucherData.nama_pemilik}</strong>
                 </div>
 
-                <div className="flex items-center gap-3 text-slate-300 bg-slate-950/40 p-3 rounded-2xl border border-slate-800/60">
-                  <MapPin className="w-5 h-5 text-blue-400 shrink-0" />
-                  <div>
-                    <p className="text-[10px] text-slate-400 font-medium">Lokasi</p>
-                    <p className="font-bold text-slate-100">{resultMessage.voucherData.lokasi}</p>
+                {/* SPEED / KECEPATAN */}
+                <div className="flex items-center justify-between text-slate-300">
+                  <div className="flex items-center gap-2">
+                    <Gauge className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Kecepatan</span>
                   </div>
+                  <strong className="text-white font-semibold">{resultMessage.voucherData.speed || '15Mbps/15Mbps'}</strong>
                 </div>
+
+                {/* LOKASI */}
+                <div className="flex items-center justify-between text-slate-300">
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-3.5 h-3.5 text-blue-400" />
+                    <span>Lokasi</span>
+                  </div>
+                  <strong className="text-white font-semibold">{resultMessage.voucherData.lokasi || '-'}</strong>
+                </div>
+
+                {/* STATUS */}
+                <div className="flex items-center justify-between text-slate-300 pt-1 border-t border-white/5">
+                  <div className="flex items-center gap-2">
+                    <Lock className="w-3.5 h-3.5 text-rose-400" />
+                    <span>Status</span>
+                  </div>
+                  <span className="px-2 py-0.5 bg-rose-500/20 text-rose-300 border border-rose-500/30 rounded text-[10px] font-black uppercase">
+                    {resultMessage.voucherData.status}
+                  </span>
+                </div>
+
               </div>
 
-              <div className="flex justify-between items-center pt-2 text-[10px] text-slate-400 border-t border-slate-800/80 relative z-10">
-                <span>Status: <strong className="text-rose-400 uppercase font-black">{resultMessage.voucherData.status} (LOCKED)</strong></span>
-                <span>Periode: {resultMessage.voucherData.bulan} {resultMessage.voucherData.tahun}</span>
-              </div>
             </div>
           </div>
         )}
 
       </div>
+
+      {/* FOOTER LABEL */}
+      <div className="relative z-10 mt-6">
+        <div className="px-5 py-1.5 rounded-full bg-white/60 border border-white/80 text-[10px] font-bold text-slate-500 uppercase tracking-widest shadow-sm">
+          DEVELOPED BY IT KEMASAN
+        </div>
+      </div>
+
     </div>
   );
 }
